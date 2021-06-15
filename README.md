@@ -73,7 +73,7 @@ Mxpanel currently exposes following Telemetry events:
   running batcher exposing the size of each running buffer in the pool.
 
     * Measurement: `%{}`
-    * Metadata: `%{buffer_name: atom(), buffer_sizes: [integer()]}`
+    * Metadata: `%{batcher_name: atom(), buffer_sizes: [integer()]}`
 
 ## Changelog
 

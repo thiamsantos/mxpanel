@@ -50,7 +50,7 @@ defmodule Mxpanel.Batcher do
     http_client: [
       type: {:custom, __MODULE__, :validate_http_client, []},
       doc: "HTTP client used by the Batcher",
-      default: {Mxpanel.HTTPClient, [name: Mxpanel.HTTPClient]}
+      default: {Mxpanel.HTTPClient.FinchAdapter, [name: Mxpanel.HTTPClient]}
     ],
     pool_size: [
       type: :pos_integer,

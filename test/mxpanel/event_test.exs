@@ -13,6 +13,7 @@ defmodule Mxpanel.EventTest do
       assert String.length(event.insert_id) == 43
       assert event.additional_properties == %{}
     end
+
     test "optional additional properties" do
       event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
 
@@ -27,15 +28,15 @@ defmodule Mxpanel.EventTest do
       actual = Event.serialize(event, "project_token")
 
       assert actual == %{
-        "event" => "signup",
-        "properties" => %{
-          "distinct_id" => "13793",
-          "token" => "project_token",
-          "$insert_id" => event.insert_id,
-          "time" => event.time,
-          "Favourite Color" => "Red"
-        }
-      }
+               "event" => "signup",
+               "properties" => %{
+                 "distinct_id" => "13793",
+                 "token" => "project_token",
+                 "$insert_id" => event.insert_id,
+                 "time" => event.time,
+                 "Favourite Color" => "Red"
+               }
+             }
     end
   end
 end

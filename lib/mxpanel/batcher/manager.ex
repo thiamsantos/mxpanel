@@ -70,7 +70,7 @@ defmodule Mxpanel.Batcher.Manager do
     :telemetry.execute(
       [:mxpanel, :batcher, :buffers_info],
       %{},
-      %{buffer_name: state.batcher_name, buffer_sizes: buffer_sizes}
+      %{batcher_name: state.batcher_name, buffer_sizes: buffer_sizes}
     )
 
     schedule_buffers_info(state.telemetry_buffers_info_interval)

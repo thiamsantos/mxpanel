@@ -23,6 +23,7 @@ defmodule Mxpanel do
       event
       |> Event.serialize(client.token)
       |> json_library().encode!()
+      |> Base.encode64()
 
     track_request(client, %{data: data})
   end
@@ -41,7 +42,6 @@ defmodule Mxpanel do
   def track_many(%Client{} = client, events) when is_list(events) do
     data =
       events
-      |> Enum.reject(&old_event?/1)
       |> Enum.map(&Event.serialize(&1, client.token))
       |> json_library().encode!()
       |> Base.encode64()
@@ -102,12 +102,5 @@ defmodule Mxpanel do
       {:error, reason} ->
         {:error, reason}
     end
-  end
-
-  @five_days 432_000
-  defp old_event?(%Event{time: time}) do
-    five_days_ago = System.os_time(:second) - @five_days
-
-    five_days_ago > time
   end
 end

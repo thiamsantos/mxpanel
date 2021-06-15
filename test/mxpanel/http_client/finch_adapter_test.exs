@@ -41,7 +41,8 @@ defmodule Mxpanel.HTTPClient.FinchAdapterTest do
 
       Bypass.down(bypass)
 
-      assert FinchAdapter.request(:post, url, headers, body, name: __MODULE__) == {:error, %Mint.TransportError{reason: :econnrefused}}
+      assert FinchAdapter.request(:post, url, headers, body, name: __MODULE__) ==
+               {:error, %Mint.TransportError{reason: :econnrefused}}
     end
   end
 
