@@ -31,7 +31,12 @@ defmodule Mxpanel.Batcher.Buffer do
 
   def init(opts) do
     batcher_name = opts[:name]
-    client = %Client{token: opts[:token], base_url: opts[:base_url], http_client: opts[:http_client]}
+
+    client = %Client{
+      token: opts[:token],
+      base_url: opts[:base_url],
+      http_client: opts[:http_client]
+    }
 
     state = %State{
       events: [],
@@ -64,10 +69,6 @@ defmodule Mxpanel.Batcher.Buffer do
   end
 
   def handle_call(:get_buffer_size, _from, state) do
-    if Enum.count(state.events) != state.buffer_size do
-      raise "size mismatch #{Enum.count(state.events)} != #{state.buffer_size}"
-    end
-
     {:reply, state.buffer_size, state}
   end
 

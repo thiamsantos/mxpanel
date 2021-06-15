@@ -64,7 +64,8 @@ defmodule Mxpanel.Batcher do
     ],
     flush_jitter: [
       type: :pos_integer,
-      doc: "Jitter the flush interval by a random amount. Value in milliseconds. This is primarily to avoid large write spikes. For example, a `flush_jitter` of 1s and `flush_interval` of 1s means flushes will happen every 5-6s.",
+      doc:
+        "Jitter the flush interval by a random amount. Value in milliseconds. This is primarily to avoid large write spikes. For example, a `flush_jitter` of 1s and `flush_interval` of 1s means flushes will happen every 5-6s.",
       default: 1_000
     ],
     retry_max_attempts: [
@@ -74,12 +75,14 @@ defmodule Mxpanel.Batcher do
     ],
     retry_base_backoff: [
       type: :pos_integer,
-      doc: "Base time in milliseconds to calculate the wait time between retry attempts. Formula: `(attempt * retry_base_backoff) + random(1..retry_base_backoff)`.",
+      doc:
+        "Base time in milliseconds to calculate the wait time between retry attempts. Formula: `(attempt * retry_base_backoff) + random(1..retry_base_backoff)`.",
       default: 100
     ],
     import_timeout: [
       type: :timeout,
-      doc: "The maximum amount of time in milliseconds each batch of events is allowed to execute for.",
+      doc:
+        "The maximum amount of time in milliseconds each batch of events is allowed to execute for.",
       default: 30_000
     ],
     telemetry_buffers_info_interval: [
@@ -126,7 +129,7 @@ defmodule Mxpanel.Batcher do
   end
 
   @doc false
-  def enqueue(batcher_name, event)do
+  def enqueue(batcher_name, event) do
     batcher_name
     |> Manager.checkout()
     |> Buffer.enqueue(event)
@@ -144,7 +147,7 @@ defmodule Mxpanel.Batcher do
   defp validate_options!(opts, schema) do
     case NimbleOptions.validate(opts, schema) do
       {:ok, opts} ->
-          opts
+        opts
 
       {:error, error} ->
         raise ArgumentError, format_error(error)

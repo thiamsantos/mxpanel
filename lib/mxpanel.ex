@@ -37,11 +37,11 @@ defmodule Mxpanel do
       Mxpanel.track(client, [event_1, event_2])
 
   """
-  @spec track_many(Client.t(), [Event.t]) :: :ok | {:error, term()}
+  @spec track_many(Client.t(), [Event.t()]) :: :ok | {:error, term()}
   def track_many(%Client{} = client, events) when is_list(events) do
     data =
       events
-      |> Enum.filter(&old_event?/1)
+      |> Enum.reject(&old_event?/1)
       |> Enum.map(&Event.serialize(&1, client.token))
       |> json_library().encode!()
       |> Base.encode64()
@@ -68,7 +68,7 @@ defmodule Mxpanel do
 
   """
   @spec track_later(Batcher.name(), Event.t()) :: :ok
-  def track_later(batcher_name, %Event{} = event) when is_atom(batcher_name)  do
+  def track_later(batcher_name, %Event{} = event) when is_atom(batcher_name) do
     Batcher.enqueue(batcher_name, event)
   end
 
@@ -108,6 +108,6 @@ defmodule Mxpanel do
   defp old_event?(%Event{time: time}) do
     five_days_ago = System.os_time(:second) - @five_days
 
-    time > five_days_ago
+    five_days_ago > time
   end
 end

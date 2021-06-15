@@ -29,7 +29,7 @@ defmodule Mxpanel.Batcher.Manager do
       telemetry_buffers_info_interval: telemetry_buffers_info_interval
     }
 
-    {:ok, state     , {:continue, :schedule_buffers_info}}
+    {:ok, state, {:continue, :schedule_buffers_info}}
   end
 
   def checkout(batcher_name) do

@@ -36,15 +36,17 @@ defmodule Mxpanel.MixProject do
       {:telemetry, "~> 0.4.2"},
 
       # optional
-      {:jason, "~> 1.2", optional: true},
       {:finch, "~> 0.5", optional: true},
+      {:hackney, "~> 1.17", optional: true},
+      {:jason, "~> 1.2", optional: true},
 
       # dev/test
-      {:ex_doc, "~> 0.24", only: :dev, runtime: false},
       {:bypass, "~> 2.1", only: :test},
-      {:excoveralls, "~> 0.14.0", only: :test},
+      {:credo_naming, "~> 1.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
-      {:credo_naming, "~> 1.0", only: [:dev, :test], runtime: false}
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false},
+      {:excoveralls, "~> 0.14.0", only: :test},
+      {:mox, "~> 1.0", only: :test}
     ]
   end
 
