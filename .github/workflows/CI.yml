@@ -61,7 +61,7 @@ jobs:
       - run: mix credo
         if: matrix.credo
 
-      - run: mix test --warnings-as-errors
+      - run: mix test
         if: ${{!matrix.coverage}}
 
       - run: mix coveralls.github
