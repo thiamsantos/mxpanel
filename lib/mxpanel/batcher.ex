@@ -154,12 +154,7 @@ defmodule Mxpanel.Batcher do
     end
   end
 
-  defp format_error(%NimbleOptions.ValidationError{keys_path: [], message: message}) do
+  defp format_error(%NimbleOptions.ValidationError{message: message}) do
     "invalid configuration given to #{inspect(__MODULE__)}.start_link/1, " <> message
-  end
-
-  defp format_error(%NimbleOptions.ValidationError{keys_path: keys_path, message: message}) do
-    "invalid configuration given to #{inspect(__MODULE__)}.start_link/1 for key #{inspect(keys_path)}, " <>
-      message
   end
 end

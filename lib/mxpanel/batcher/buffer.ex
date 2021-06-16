@@ -4,6 +4,7 @@ defmodule Mxpanel.Batcher.Buffer do
   use GenServer
 
   alias Mxpanel.Batcher.Manager
+  alias Mxpanel.Batcher.Queue
   alias Mxpanel.Client
 
   require Logger
@@ -18,8 +19,7 @@ defmodule Mxpanel.Batcher.Buffer do
       :flush_jitter,
       :retry_max_attempts,
       :retry_base_backoff,
-      :import_timeout,
-      :buffer_size
+      :import_timeout
     ]
   end
 
@@ -39,8 +39,7 @@ defmodule Mxpanel.Batcher.Buffer do
     }
 
     state = %State{
-      events: [],
-      buffer_size: 0,
+      events: Queue.new(),
       client: client,
       flush_interval: opts[:flush_interval],
       flush_jitter: opts[:flush_jitter],
@@ -69,15 +68,16 @@ defmodule Mxpanel.Batcher.Buffer do
   end
 
   def handle_call(:get_buffer_size, _from, state) do
-    {:reply, state.buffer_size, state}
+    {:reply, state.events.size, state}
   end
 
   def handle_cast({:enqueue, event}, state) do
-    {:noreply, %{state | events: [event | state.events], buffer_size: state.buffer_size + 1}}
+    {:noreply, %{state | events: Queue.add(state.events, event)}}
   end
 
   def handle_info(:flush, state) do
     state.events
+    |> Queue.to_list()
     |> Enum.chunk_every(@batch_size)
     |> Task.async_stream(
       fn batch ->
@@ -89,7 +89,7 @@ defmodule Mxpanel.Batcher.Buffer do
 
     schedule_flush(state)
 
-    {:noreply, %{state | events: [], buffer_size: 0}}
+    {:noreply, %{state | events: Queue.new()}}
   end
 
   defp track_many(state, batch, attempts \\ 1) do
@@ -99,8 +99,6 @@ defmodule Mxpanel.Batcher.Buffer do
 
       {:error, _reason} ->
         if attempts >= state.retry_max_attempts do
-          # TODO notify telemetry
-          # TODO read telemetry best practices
           Logger.error(
             "[mxpanel] Failed to import a batch of events after #{state.retry_max_attempts} attempts"
           )

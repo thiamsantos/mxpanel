@@ -90,7 +90,7 @@ defmodule Mxpanel do
 
     url = client.base_url |> URI.parse() |> Map.put(:path, "/track") |> URI.to_string()
     headers = [{"Accept", "text/plain"}, {"Content-Type", "application/x-www-form-urlencoded"}]
-    encoded_body = URI.encode_query(body, :www_form)
+    encoded_body = URI.encode_query(body)
 
     case apply(http_mod, :request, [:post, url, headers, encoded_body, http_opts]) do
       {:ok, %{status: 200, body: "1"}} ->

@@ -10,7 +10,7 @@ defmodule Mxpanel.MixProject do
     [
       app: :mxpanel,
       version: @version,
-      elixir: "~> 1.10",
+      elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       name: @name,
       description: @description,

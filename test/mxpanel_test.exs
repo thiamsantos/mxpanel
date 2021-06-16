@@ -1,6 +1,7 @@
 defmodule MxpanelTest do
   use ExUnit.Case, async: true
 
+  import Mxpanel.BufferHelpers
   alias Mxpanel.Batcher
   alias Mxpanel.Client
   alias Mxpanel.Event
@@ -148,38 +149,22 @@ defmodule MxpanelTest do
   end
 
   describe "track_later/2" do
-    setup context do
+    setup do
       bypass = Bypass.open()
 
       batcher_name =
-        Module.concat(context.module, "Batcher#{System.unique_integer([:positive, :monotonic])}")
+        Module.concat(__MODULE__, "Batcher#{System.unique_integer([:positive, :monotonic])}")
 
       token = "project_token"
-      pid = self()
-      handler_id = {context.module, context.test}
-
-      :telemetry.attach(
-        handler_id,
-        [:mxpanel, :batcher, :buffers_info],
-        fn event, measurements, metadata, config ->
-          send(pid, {:telemetry, event, measurements, metadata, config})
-        end,
-        nil
-      )
-
-      on_exit(fn ->
-        :telemetry.detach(handler_id)
-      end)
 
       start_supervised!(
         {Batcher,
          name: batcher_name,
          token: token,
          base_url: "http://localhost:#{bypass.port}",
-         telemetry_buffers_info_interval: 1,
          pool_size: 1,
-         flush_interval: 1,
-         flush_jitter: 1}
+         flush_interval: 1_000,
+         flush_jitter: 1_000}
       )
 
       %{bypass: bypass, batcher_name: batcher_name, token: token}
@@ -224,8 +209,7 @@ defmodule MxpanelTest do
 
       assert Mxpanel.track_later(batcher_name, event) == :ok
 
-      assert_receive {:telemetry, [:mxpanel, :batcher, :buffers_info], %{},
-                      %{batcher_name: ^batcher_name, buffer_sizes: [0]}, _config}
+      wait_for_drain(batcher_name)
     end
   end
 end
