@@ -70,7 +70,7 @@ defmodule Mxpanel.Batcher do
     retry_max_attempts: [
       type: :pos_integer,
       doc: "Max attempts that a batch of events should be tried before giving up.",
-      default: 3
+      default: 5
     ],
     retry_base_backoff: [
       type: :pos_integer,
@@ -88,6 +88,11 @@ defmodule Mxpanel.Batcher do
       type: :pos_integer,
       doc: "Interval in milliseconds the `telemetry` with the buffers info is published.",
       default: 30_000
+    ],
+    debug: [
+      type: :boolean,
+      doc: "Enable debug logging",
+      default: false
     ]
   ]
 
