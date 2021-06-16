@@ -13,13 +13,15 @@ defmodule Mxpanel.Batcher.Buffer do
     @moduledoc false
 
     defstruct [
+      :batcher_name,
       :events,
       :client,
       :flush_interval,
       :flush_jitter,
       :retry_max_attempts,
       :retry_base_backoff,
-      :import_timeout
+      :import_timeout,
+      :debug
     ]
   end
 
@@ -39,13 +41,15 @@ defmodule Mxpanel.Batcher.Buffer do
     }
 
     state = %State{
+      batcher_name: batcher_name,
       events: Queue.new(),
       client: client,
       flush_interval: opts[:flush_interval],
       flush_jitter: opts[:flush_jitter],
       retry_max_attempts: opts[:retry_max_attempts],
       retry_base_backoff: opts[:retry_base_backoff],
-      import_timeout: opts[:import_timeout]
+      import_timeout: opts[:import_timeout],
+      debug: opts[:debug]
     }
 
     Manager.register(batcher_name)
@@ -93,15 +97,24 @@ defmodule Mxpanel.Batcher.Buffer do
   end
 
   defp track_many(state, batch, attempts \\ 1) do
+    if state.debug == true do
+      Logger.debug(
+        "[mxpanel] [#{inspect(state.batcher_name)}] Attempt #{attempts} to import batch of #{Enum.count(batch)} events"
+      )
+    end
+
     case Mxpanel.track_many(state.client, batch) do
       :ok ->
         :ok
 
       {:error, _reason} ->
         if attempts >= state.retry_max_attempts do
-          Logger.error(
-            "[mxpanel] Failed to import a batch of events after #{state.retry_max_attempts} attempts"
-          )
+          if state.debug == true do
+            Logger.debug(
+              "[mxpanel] [#{inspect(state.batcher_name)}] Failed to import a batch " <>
+                "of #{Enum.count(batch)} events after #{state.retry_max_attempts} attempts"
+            )
+          end
 
           :ok
         else

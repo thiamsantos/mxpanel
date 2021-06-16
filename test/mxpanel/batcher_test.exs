@@ -173,15 +173,49 @@ defmodule Mxpanel.BatcherTest do
          flush_jitter: 100}
       )
 
-      expect(HTTPClientMock, :request, 3, fn :post, _url, _headers, _body, _opts ->
+      expect(HTTPClientMock, :request, 5, fn :post, _url, _headers, _body, _opts ->
         {:ok, %{body: "0", headers: [], status: 500}}
       end)
 
-      assert capture_log(fn ->
-               Batcher.enqueue(name, Event.new("signup", "1"))
+      Batcher.enqueue(name, Event.new("signup", "1"))
 
-               wait_for_drain(name)
-             end) =~ "[mxpanel] Failed to import a batch of events after 3 attempts"
+      wait_for_drain(name)
+    end
+
+    test "debug logs" do
+      name = gen_name()
+
+      start_supervised!(
+        {Batcher,
+         name: name,
+         token: "token",
+         pool_size: 1,
+         telemetry_buffers_info_interval: 1,
+         http_client: {HTTPClientMock, []},
+         flush_interval: 100,
+         flush_jitter: 100,
+         debug: true}
+      )
+
+      stub(HTTPClientMock, :request, fn :post, _url, _headers, _body, _opts ->
+        {:ok, %{body: "0", headers: [], status: 500}}
+      end)
+
+      logs =
+        capture_log(fn ->
+          Batcher.enqueue(name, Event.new("signup", "1"))
+
+          wait_for_drain(name)
+        end)
+
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 1 to import batch of 1 events"
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 2 to import batch of 1 events"
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 3 to import batch of 1 events"
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 4 to import batch of 1 events"
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 5 to import batch of 1 events"
+
+      assert logs =~
+               "[debug] [mxpanel] [#{inspect(name)}] Failed to import a batch of 1 events after 5 attempts"
     end
   end
 
