@@ -30,12 +30,19 @@ defmodule Mxpanel.HTTPClient.FinchAdapter do
   if Code.ensure_loaded?(Finch) do
     @impl Mxpanel.HTTPClient
     def request(method, url, headers, body, opts) do
-      {name, opts} = Keyword.pop!(opts, :name)
+      {name, opts} = pop!(opts, :name)
 
       method
       |> Finch.build(url, headers, body)
       |> Finch.request(name, opts)
       |> to_response()
+    end
+
+    def pop!(keywords, key) when is_list(keywords) and is_atom(key) do
+      case Keyword.fetch(keywords, key) do
+        {:ok, value} -> {value, Keyword.delete(keywords, key)}
+        :error -> raise KeyError, key: key, term: keywords
+      end
     end
 
     defp to_response({:ok, response}) do
