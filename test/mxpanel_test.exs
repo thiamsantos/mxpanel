@@ -66,7 +66,7 @@ defmodule MxpanelTest do
 
       Bypass.down(bypass)
 
-      assert Mxpanel.track(client, event) == {:error, %Mint.TransportError{reason: :econnrefused}}
+      assert Mxpanel.track(client, event) == {:error, :econnrefused}
     end
   end
 
@@ -144,7 +144,7 @@ defmodule MxpanelTest do
       Bypass.down(bypass)
 
       assert Mxpanel.track_many(client, [event_1, event_2]) ==
-               {:error, %Mint.TransportError{reason: :econnrefused}}
+               {:error, :econnrefused}
     end
   end
 

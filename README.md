@@ -22,7 +22,7 @@ def deps do
   [
     {:mxpanel, "~> 0.1.0"},
     {:jason, "~> 1.2"},
-    {:finch, "~> 0.5"}
+    {:hackney, "~> 1.17"}
   ]
 end
 ```
@@ -30,14 +30,6 @@ end
 ## Usage
 
 ### Track event
-
-1. Add to your supervision tree:
-
-```elixir
-{Finch, name: Mxpanel.HTTPClient}
-```
-
-2. Call `track/2`:
 
 ```elixir
 client = %Mxpanel.Client{token: "mixpanel project token"}
@@ -51,7 +43,6 @@ Mxpanel.track(client, event)
 1. Add to your supervision tree:
 
 ```elixir
-{Finch, name: Mxpanel.HTTPClient},
 {Mxpanel.Batcher, name: MyApp.Batcher, token: "mixpanel project token"}
 ```
 

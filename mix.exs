@@ -36,7 +36,6 @@ defmodule Mxpanel.MixProject do
       {:telemetry, "~> 0.4.2"},
 
       # optional
-      {:finch, "~> 0.5", optional: true},
       {:hackney, "~> 1.17", optional: true},
       {:jason, "~> 1.2", optional: true},
 

@@ -11,7 +11,6 @@ defmodule Mxpanel.Batcher do
   1. Add to your supervision tree:
 
   ```elixir
-  {Finch, name: Mxpanel.HTTPClient},
   {Mxpanel.Batcher, name: MyApp.Batcher, token: "mixpanel project token"}
   ```
 
@@ -50,7 +49,7 @@ defmodule Mxpanel.Batcher do
     http_client: [
       type: {:custom, __MODULE__, :validate_http_client, []},
       doc: "HTTP client used by the Batcher",
-      default: {Mxpanel.HTTPClient.FinchAdapter, [name: Mxpanel.HTTPClient]}
+      default: {Mxpanel.HTTPClient.HackneyAdapter, []}
     ],
     pool_size: [
       type: :pos_integer,

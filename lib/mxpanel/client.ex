@@ -12,7 +12,7 @@ defmodule Mxpanel.Client do
 
   ## Custom HTTP client
 
-  You can switch the default HTTP client which uses [finch](https://github.com/keathley/finch) underneath
+  You can switch the default HTTP client which uses [hackney](https://github.com/benoitc/hackney) underneath
   by defining a different implementation by setting the `:http_client` option:
 
       %Mxpanel.Client{http_client: {MyCustomHTTPClient, []}, token: "token"}
@@ -20,7 +20,7 @@ defmodule Mxpanel.Client do
   """
   defstruct token: nil,
             base_url: "https://api.mixpanel.com",
-            http_client: {Mxpanel.HTTPClient.FinchAdapter, [name: Mxpanel.HTTPClient]}
+            http_client: {Mxpanel.HTTPClient.HackneyAdapter, [name: Mxpanel.HTTPClient]}
 
   @type t :: %__MODULE__{
           token: String.t(),
