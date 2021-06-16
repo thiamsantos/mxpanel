@@ -1,5 +1,5 @@
 defmodule Mxpanel.BatcherTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   import Mox
   import ExUnit.CaptureLog
@@ -11,6 +11,7 @@ defmodule Mxpanel.BatcherTest do
   @one_year 86_400_000 * 365
 
   setup :verify_on_exit!
+  setup :set_mox_global
 
   describe "start_link/1" do
     test "start batcher" do
@@ -129,13 +130,6 @@ defmodule Mxpanel.BatcherTest do
          flush_jitter: 100}
       )
 
-      name
-      |> Module.concat("Registry")
-      |> Registry.lookup(:buffers)
-      |> Enum.map(fn {pid, _value} ->
-        allow(HTTPClientMock, self(), pid)
-      end)
-
       expect(HTTPClientMock, :request, 2, fn :post, url, headers, body, opts ->
         assert url == "https://api.mixpanel.com/track"
 
@@ -178,13 +172,6 @@ defmodule Mxpanel.BatcherTest do
          flush_interval: 100,
          flush_jitter: 100}
       )
-
-      name
-      |> Module.concat("Registry")
-      |> Registry.lookup(:buffers)
-      |> Enum.map(fn {pid, _value} ->
-        allow(HTTPClientMock, self(), pid)
-      end)
 
       expect(HTTPClientMock, :request, 3, fn :post, _url, _headers, _body, _opts ->
         {:ok, %{body: "0", headers: [], status: 500}}
