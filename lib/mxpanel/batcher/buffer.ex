@@ -103,7 +103,7 @@ defmodule Mxpanel.Batcher.Buffer do
       )
     end
 
-    case Mxpanel.track_many(state.client, batch) do
+    case Mxpanel.track(state.client, batch) do
       :ok ->
         :ok
 

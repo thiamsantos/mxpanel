@@ -23,7 +23,7 @@ defmodule MxpanelTest do
         assert %{"data" => payload} = URI.decode_query(body)
         decoded_payload = Base.decode64!(payload)
 
-        assert Jason.decode!(decoded_payload) == %{
+        assert Jason.decode!(decoded_payload) == [%{
                  "event" => "signup",
                  "properties" => %{
                    "$insert_id" => event.insert_id,
@@ -32,7 +32,7 @@ defmodule MxpanelTest do
                    "time" => event.time,
                    "token" => "project_token"
                  }
-               }
+               }]
 
         assert Plug.Conn.get_req_header(conn, "content-type") == [
                  "application/x-www-form-urlencoded"
@@ -48,36 +48,7 @@ defmodule MxpanelTest do
       assert Mxpanel.track(client, event) == :ok
     end
 
-    test "failed request", %{bypass: bypass} do
-      client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
-      event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
-
-      Bypass.expect_once(bypass, "POST", "/track", fn conn ->
-        Plug.Conn.resp(conn, 500, "Internal server error")
-      end)
-
-      assert {:error, %{body: "Internal server error", headers: _, status: 500}} =
-               Mxpanel.track(client, event)
-    end
-
-    test "API down", %{bypass: bypass} do
-      client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
-      event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
-
-      Bypass.down(bypass)
-
-      assert Mxpanel.track(client, event) == {:error, :econnrefused}
-    end
-  end
-
-  describe "track_many/2" do
-    setup do
-      bypass = Bypass.open()
-
-      %{bypass: bypass}
-    end
-
-    test "success request", %{bypass: bypass} do
+    test "multiple events", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
       event_1 = Event.new("signup", "1234")
       event_2 = Event.new("signup", "5678")
@@ -120,31 +91,28 @@ defmodule MxpanelTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Mxpanel.track_many(client, [event_1, event_2]) == :ok
+      assert Mxpanel.track(client, [event_1, event_2]) == :ok
     end
 
     test "failed request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
-      event_1 = Event.new("signup", "1234")
-      event_2 = Event.new("signup", "5679")
+      event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
 
       Bypass.expect_once(bypass, "POST", "/track", fn conn ->
         Plug.Conn.resp(conn, 500, "Internal server error")
       end)
 
       assert {:error, %{body: "Internal server error", headers: _, status: 500}} =
-               Mxpanel.track_many(client, [event_1, event_2])
+               Mxpanel.track(client, event)
     end
 
     test "API down", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
-      event_1 = Event.new("signup", "1234")
-      event_2 = Event.new("signup", "5679")
+      event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
 
       Bypass.down(bypass)
 
-      assert Mxpanel.track_many(client, [event_1, event_2]) ==
-               {:error, :econnrefused}
+      assert Mxpanel.track(client, event) == {:error, :econnrefused}
     end
   end
 

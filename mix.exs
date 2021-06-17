@@ -54,6 +54,7 @@ defmodule Mxpanel.MixProject do
       main: @name,
       source_ref: "v#{@version}",
       source_url: @repo_url,
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
       extras: ["CHANGELOG.md"]
     ]
   end

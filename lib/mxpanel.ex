@@ -16,19 +16,6 @@ defmodule Mxpanel do
       event = Mxpanel.Event.new("signup", "123")
       Mxpanel.track(client, event)
 
-  """
-  @spec track(Client.t(), Event.t()) :: :ok | {:error, term()}
-  def track(%Client{} = client, %Event{} = event) do
-    data =
-      event
-      |> Event.serialize(client.token)
-      |> json_library().encode!()
-      |> Base.encode64()
-
-    track_request(client, %{data: data})
-  end
-
-  @doc """
   Import a batch of events into Mixpanel.
 
       client = %Mxpanel.Client{token: "mixpanel project token"}
@@ -38,10 +25,11 @@ defmodule Mxpanel do
       Mxpanel.track(client, [event_1, event_2])
 
   """
-  @spec track_many(Client.t(), [Event.t()]) :: :ok | {:error, term()}
-  def track_many(%Client{} = client, events) when is_list(events) do
+  @spec track(Client.t(), Event.t() | [Event.t()]) :: :ok | {:error, term()}
+  def track(%Client{} = client, event_or_events) do
     data =
-      events
+      event_or_events
+      |> List.wrap()
       |> Enum.map(&Event.serialize(&1, client.token))
       |> json_library().encode!()
       |> Base.encode64()
