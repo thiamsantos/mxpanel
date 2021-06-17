@@ -57,8 +57,8 @@ defmodule Mxpanel.Batcher.Buffer do
     {:ok, state, {:continue, :schedule_flush}}
   end
 
-  def enqueue(pid, event) do
-    GenServer.cast(pid, {:enqueue, event})
+  def enqueue(pid, event_or_events) do
+    GenServer.cast(pid, {:enqueue, event_or_events})
   end
 
   def get_buffer_size(pid) do
@@ -75,8 +75,8 @@ defmodule Mxpanel.Batcher.Buffer do
     {:reply, state.events.size, state}
   end
 
-  def handle_cast({:enqueue, event}, state) do
-    {:noreply, %{state | events: Queue.add(state.events, event)}}
+  def handle_cast({:enqueue, event_or_events}, state) do
+    {:noreply, %{state | events: Queue.add(state.events, event_or_events)}}
   end
 
   def handle_info(:flush, state) do

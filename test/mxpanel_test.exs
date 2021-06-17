@@ -23,16 +23,18 @@ defmodule MxpanelTest do
         assert %{"data" => payload} = URI.decode_query(body)
         decoded_payload = Base.decode64!(payload)
 
-        assert Jason.decode!(decoded_payload) == [%{
-                 "event" => "signup",
-                 "properties" => %{
-                   "$insert_id" => event.insert_id,
-                   "Favourite Color" => "Red",
-                   "distinct_id" => "13793",
-                   "time" => event.time,
-                   "token" => "project_token"
+        assert Jason.decode!(decoded_payload) == [
+                 %{
+                   "event" => "signup",
+                   "properties" => %{
+                     "$insert_id" => event.insert_id,
+                     "Favourite Color" => "Red",
+                     "distinct_id" => "13793",
+                     "time" => event.time,
+                     "token" => "project_token"
+                   }
                  }
-               }]
+               ]
 
         assert Plug.Conn.get_req_header(conn, "content-type") == [
                  "application/x-www-form-urlencoded"
@@ -176,6 +178,51 @@ defmodule MxpanelTest do
       end)
 
       assert Mxpanel.track_later(batcher_name, event) == :ok
+
+      wait_for_drain(batcher_name)
+    end
+
+    test "multiple events", %{
+      bypass: bypass,
+      batcher_name: batcher_name,
+      token: token
+    } do
+      event_1 = Event.new("signup", "1234")
+      event_2 = Event.new("signup", "5678")
+
+      Bypass.expect_once(bypass, "POST", "/track", fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+        assert %{"data" => payload} = URI.decode_query(body)
+        decoded_payload = Base.decode64!(payload)
+
+        assert Jason.decode!(decoded_payload) == [
+                 %{
+                   "event" => "signup",
+                   "properties" => %{
+                     "$insert_id" => event_1.insert_id,
+                     "distinct_id" => "1234",
+                     "time" => event_1.time,
+                     "token" => token
+                   }
+                 },
+                 %{
+                   "event" => "signup",
+                   "properties" => %{
+                     "$insert_id" => event_2.insert_id,
+                     "distinct_id" => "5678",
+                     "time" => event_2.time,
+                     "token" => token
+                   }
+                 }
+               ]
+
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "text/plain")
+        |> Plug.Conn.resp(200, "1")
+      end)
+
+      assert Mxpanel.track_later(batcher_name, [event_1, event_2]) == :ok
 
       wait_for_drain(batcher_name)
     end

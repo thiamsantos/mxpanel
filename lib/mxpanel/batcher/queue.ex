@@ -11,6 +11,10 @@ defmodule Mxpanel.Batcher.Queue do
     Enum.reverse(queue.items)
   end
 
+  def add(%__MODULE__{} = queue, items) when is_list(items) do
+    Enum.reduce(items, queue, fn item, acc -> add(acc, item) end)
+  end
+
   def add(%__MODULE__{} = queue, item) do
     %{queue | items: [item | queue.items], size: queue.size + 1}
   end

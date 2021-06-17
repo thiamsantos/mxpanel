@@ -55,9 +55,9 @@ defmodule Mxpanel do
   Checkout `Mxpanel.Batcher` for more information.
 
   """
-  @spec track_later(Batcher.name(), Event.t()) :: :ok
-  def track_later(batcher_name, %Event{} = event) when is_atom(batcher_name) do
-    Batcher.enqueue(batcher_name, event)
+  @spec track_later(Batcher.name(), Event.t() | [Event.t()]) :: :ok
+  def track_later(batcher_name, event_or_events) when is_atom(batcher_name) do
+    Batcher.enqueue(batcher_name, event_or_events)
   end
 
   @doc """

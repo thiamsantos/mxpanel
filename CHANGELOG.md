@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `pool_size` options of `Mxpanel.Batcher` increased from `3` to `5`.
+- Support batch of events in `Mxpanel.track/2` and `Mxpanel.track_later/2`.
 
 ### Added
 
