@@ -78,9 +78,9 @@ defmodule Mxpanel.Batcher.Buffer do
   end
 
   def handle_call(:drain, _from, state) do
-    events = flush(state)
+    flush(state)
 
-    {:reply, events, %{state | events: Queue.new()}}
+    {:reply, :ok, %{state | events: Queue.new()}}
   end
 
   def handle_cast({:enqueue, event_or_events}, state) do
@@ -100,13 +100,12 @@ defmodule Mxpanel.Batcher.Buffer do
     |> Enum.chunk_every(@batch_size)
     |> Task.async_stream(
       fn batch ->
-        :ok = track_many(state, batch)
-        batch
+        track_many(state, batch)
       end,
       ordered: false,
       timeout: state.import_timeout
     )
-    |> Enum.to_list()
+    |> Stream.run()
   end
 
   defp track_many(state, batch, attempts \\ 1) do

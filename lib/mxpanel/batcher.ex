@@ -27,7 +27,6 @@ defmodule Mxpanel.Batcher do
 
   alias Mxpanel.Batcher.Buffer
   alias Mxpanel.Batcher.Manager
-  alias Mxpanel.Event
 
   @type name :: atom()
 
@@ -144,14 +143,11 @@ defmodule Mxpanel.Batcher do
       Mxpanel.Batcher.drain_buffers(MyApp.Batcher)
 
   """
-  @spec drain_buffers(name()) :: [Event.t()]
+  @spec drain_buffers(name()) :: :ok
   def drain_buffers(batcher_name) do
     batcher_name
     |> Manager.buffers()
-    |> Enum.flat_map(fn pid ->
-      GenServer.call(pid, :drain)
-    end)
-    |> Enum.flat_map(fn {:ok, events} -> events end)
+    |> Enum.each(fn pid -> GenServer.call(pid, :drain) end)
   end
 
   @doc false
