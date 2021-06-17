@@ -38,8 +38,12 @@ defmodule Mxpanel.Batcher do
     ],
     token: [
       type: :string,
-      doc: "The Mixpanel token associated with your project.",
-      required: true
+      doc: "Required if active. The Mixpanel token associated with your project."
+    ],
+    active: [
+      type: :boolean,
+      doc: "Configure Batcher to be active or not. Useful for disabling requests during `:test`.",
+      default: true
     ],
     base_url: [
       type: :string,
@@ -132,6 +136,20 @@ defmodule Mxpanel.Batcher do
     Supervisor.init(children, strategy: :rest_for_one)
   end
 
+  @doc """
+  Synchronously drain all buffers in the batcher.
+
+      Mxpanel.Batcher.drain_buffers(MyApp.Batcher)
+
+  """
+  @spec drain_buffers(name()) :: integer()
+  def drain_buffers(batcher_name) do
+    batcher_name
+    |> Manager.buffers()
+    |> Enum.map(fn pid -> GenServer.call(pid, :drain) end)
+    |> Enum.sum()
+  end
+
   @doc false
   def enqueue(batcher_name, event_or_events) do
     batcher_name
@@ -149,16 +167,21 @@ defmodule Mxpanel.Batcher do
   end
 
   defp validate_options!(opts, schema) do
-    case NimbleOptions.validate(opts, schema) do
-      {:ok, opts} ->
-        opts
-
-      {:error, error} ->
-        raise ArgumentError, format_error(error)
+    with {:ok, opts} <- NimbleOptions.validate(opts, schema),
+         {:ok, opts} <- validate_token(opts) do
+      opts
+    else
+      {:error, %NimbleOptions.ValidationError{message: message}} ->
+        raise ArgumentError,
+              "invalid configuration given to #{inspect(__MODULE__)}.start_link/1, " <> message
     end
   end
 
-  defp format_error(%NimbleOptions.ValidationError{message: message}) do
-    "invalid configuration given to #{inspect(__MODULE__)}.start_link/1, " <> message
+  defp validate_token(opts) do
+    if opts[:active] == true and not is_binary(opts[:token]) do
+      {:error, %NimbleOptions.ValidationError{message: "required option :token not found"}}
+    else
+      {:ok, opts}
+    end
   end
 end

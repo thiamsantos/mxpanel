@@ -50,6 +50,13 @@ defmodule Mxpanel.Batcher.Manager do
     Registry.register(registry_name(batcher_name), @registry_key, nil)
   end
 
+  def buffers(batcher_name) do
+    batcher_name
+    |> registry_name()
+    |> Registry.lookup(@registry_key)
+    |> Enum.map(fn {pid, _value} -> pid end)
+  end
+
   def registry_name(batcher_name), do: Module.concat(batcher_name, "Registry")
 
   def handle_continue(:schedule_buffers_info, %State{} = state) do

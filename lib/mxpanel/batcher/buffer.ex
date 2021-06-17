@@ -21,7 +21,8 @@ defmodule Mxpanel.Batcher.Buffer do
       :retry_max_attempts,
       :retry_base_backoff,
       :import_timeout,
-      :debug
+      :debug,
+      :active
     ]
   end
 
@@ -49,7 +50,8 @@ defmodule Mxpanel.Batcher.Buffer do
       retry_max_attempts: opts[:retry_max_attempts],
       retry_base_backoff: opts[:retry_base_backoff],
       import_timeout: opts[:import_timeout],
-      debug: opts[:debug]
+      debug: opts[:debug],
+      active: opts[:active]
     }
 
     Manager.register(batcher_name)
@@ -75,11 +77,24 @@ defmodule Mxpanel.Batcher.Buffer do
     {:reply, state.events.size, state}
   end
 
+  def handle_call(:drain, _from, state) do
+    flush(state)
+
+    {:reply, state.events.size, %{state | events: Queue.new()}}
+  end
+
   def handle_cast({:enqueue, event_or_events}, state) do
     {:noreply, %{state | events: Queue.add(state.events, event_or_events)}}
   end
 
   def handle_info(:flush, state) do
+    flush(state)
+    schedule_flush(state)
+
+    {:noreply, %{state | events: Queue.new()}}
+  end
+
+  defp flush(state) do
     state.events
     |> Queue.to_list()
     |> Enum.chunk_every(@batch_size)
@@ -90,10 +105,6 @@ defmodule Mxpanel.Batcher.Buffer do
       timeout: state.import_timeout
     )
     |> Stream.run()
-
-    schedule_flush(state)
-
-    {:noreply, %{state | events: Queue.new()}}
   end
 
   defp track_many(state, batch, attempts \\ 1) do
@@ -103,7 +114,7 @@ defmodule Mxpanel.Batcher.Buffer do
       )
     end
 
-    case Mxpanel.track(state.client, batch) do
+    case call_api(state, batch) do
       :ok ->
         :ok
 
@@ -124,6 +135,14 @@ defmodule Mxpanel.Batcher.Buffer do
           Process.sleep(sleep_time)
           track_many(state, batch, attempts + 1)
         end
+    end
+  end
+
+  defp call_api(state, batch) do
+    if state.active do
+      Mxpanel.track(state.client, batch)
+    else
+      :ok
     end
   end
 

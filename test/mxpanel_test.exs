@@ -1,7 +1,6 @@
 defmodule MxpanelTest do
   use ExUnit.Case, async: true
 
-  import Mxpanel.BufferHelpers
   alias Mxpanel.Batcher
   alias Mxpanel.Client
   alias Mxpanel.Event
@@ -179,7 +178,7 @@ defmodule MxpanelTest do
 
       assert Mxpanel.track_later(batcher_name, event) == :ok
 
-      wait_for_drain(batcher_name)
+      Batcher.drain_buffers(batcher_name)
     end
 
     test "multiple events", %{
@@ -224,7 +223,7 @@ defmodule MxpanelTest do
 
       assert Mxpanel.track_later(batcher_name, [event_1, event_2]) == :ok
 
-      wait_for_drain(batcher_name)
+      Batcher.drain_buffers(batcher_name)
     end
   end
 end

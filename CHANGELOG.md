@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `Mxpanel.Batcher.drain_buffers/1`.
+- `active` option to `Mxpanel.Batcher`.
 - `debug` option to `Mxpanel.Batcher`.
 
 ### Removed

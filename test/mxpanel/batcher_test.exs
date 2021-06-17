@@ -3,7 +3,6 @@ defmodule Mxpanel.BatcherTest do
 
   import Mox
   import ExUnit.CaptureLog
-  import Mxpanel.BufferHelpers
   alias Mxpanel.Batcher
   alias Mxpanel.Event
   alias Mxpanel.HTTPClientMock
@@ -32,6 +31,10 @@ defmodule Mxpanel.BatcherTest do
       assert_raise ArgumentError, ~r/required option :token not found/, fn ->
         Batcher.start_link(name: gen_name())
       end
+    end
+
+    test "token optional when active" do
+      assert {:ok, _} = Batcher.start_link(name: gen_name(), active: false)
     end
 
     test "invalid http_client" do
@@ -156,7 +159,7 @@ defmodule Mxpanel.BatcherTest do
         Batcher.enqueue(name, Event.new("signup", "#{i}"))
       end
 
-      wait_for_drain(name)
+      Batcher.drain_buffers(name)
     end
 
     test "retries" do
@@ -169,6 +172,7 @@ defmodule Mxpanel.BatcherTest do
          pool_size: 1,
          telemetry_buffers_info_interval: 1,
          http_client: {HTTPClientMock, []},
+         retry_base_backoff: 1,
          flush_interval: 100,
          flush_jitter: 100}
       )
@@ -179,7 +183,7 @@ defmodule Mxpanel.BatcherTest do
 
       Batcher.enqueue(name, Event.new("signup", "1"))
 
-      wait_for_drain(name)
+      Batcher.drain_buffers(name)
     end
 
     test "debug logs" do
@@ -205,7 +209,7 @@ defmodule Mxpanel.BatcherTest do
         capture_log(fn ->
           Batcher.enqueue(name, Event.new("signup", "1"))
 
-          wait_for_drain(name)
+          Batcher.drain_buffers(name)
         end)
 
       assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 1 to import batch of 1 events"
@@ -216,6 +220,26 @@ defmodule Mxpanel.BatcherTest do
 
       assert logs =~
                "[debug] [mxpanel] [#{inspect(name)}] Failed to import a batch of 1 events after 5 attempts"
+    end
+
+    test "do not enqueue when inactive" do
+      name = gen_name()
+
+      start_supervised!(
+        {Batcher,
+         name: name,
+         token: "token",
+         pool_size: 1,
+         telemetry_buffers_info_interval: 1,
+         http_client: {HTTPClientMock, []},
+         flush_interval: 1,
+         flush_jitter: 1,
+         active: false}
+      )
+
+      Batcher.enqueue(name, Event.new("signup", "1"))
+
+      Batcher.drain_buffers(name)
     end
   end
 
