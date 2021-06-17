@@ -159,7 +159,9 @@ defmodule Mxpanel.BatcherTest do
         Batcher.enqueue(name, Event.new("signup", "#{i}"))
       end
 
-      Batcher.drain_buffers(name)
+      events = Batcher.drain_buffers(name)
+
+      assert Enum.count(events) == 100
     end
 
     test "retries" do
