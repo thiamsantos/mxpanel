@@ -222,7 +222,7 @@ defmodule Mxpanel.BatcherTest do
                "[debug] [mxpanel] [#{inspect(name)}] Failed to import a batch of 1 events after 5 attempts"
     end
 
-    test "do not enqueue when inactive" do
+    test "do not call api when inactive" do
       name = gen_name()
 
       start_supervised!(
