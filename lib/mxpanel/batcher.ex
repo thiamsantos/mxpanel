@@ -42,7 +42,8 @@ defmodule Mxpanel.Batcher do
     ],
     active: [
       type: :boolean,
-      doc: "Configure Batcher to be active or not. Useful for disabling requests in certain environments.",
+      doc:
+        "Configure Batcher to be active or not. Useful for disabling requests in certain environments.",
       default: true
     ],
     base_url: [
