@@ -37,7 +37,7 @@ defmodule Mxpanel.Batcher do
       required: true
     ],
     token: [
-      type: :string,
+      type: :any,
       doc: "Required if active. The Mixpanel token associated with your project."
     ],
     active: [
@@ -179,10 +179,21 @@ defmodule Mxpanel.Batcher do
   end
 
   defp validate_token(opts) do
-    if opts[:active] == true and not is_binary(opts[:token]) do
-      {:error, %NimbleOptions.ValidationError{message: "required option :token not found"}}
-    else
-      {:ok, opts}
+    case {opts[:active] == true, Keyword.has_key?(opts, :token), is_binary(opts[:token])} do
+      {true, true, true} ->
+        {:ok, opts}
+
+      {true, true, false} ->
+        {:error,
+         %NimbleOptions.ValidationError{
+           message: "expected :token to be a string, got: #{inspect(opts[:token])}"
+         }}
+
+      {true, false, _} ->
+        {:error, %NimbleOptions.ValidationError{message: "required option :token not found"}}
+
+      {false, _, _} ->
+        {:ok, opts}
     end
   end
 end

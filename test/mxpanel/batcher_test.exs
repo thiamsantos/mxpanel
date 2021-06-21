@@ -33,8 +33,18 @@ defmodule Mxpanel.BatcherTest do
       end
     end
 
-    test "token optional when active" do
+    test "token optional when inactive" do
       assert {:ok, _} = Batcher.start_link(name: gen_name(), active: false)
+    end
+
+    test "supports token nil when active" do
+      assert {:ok, _} = Batcher.start_link(name: gen_name(), token: nil, active: false)
+    end
+
+    test "token string when active" do
+      assert_raise ArgumentError, ~r/expected :token to be a string, got: nil/, fn ->
+        Batcher.start_link(name: gen_name(), token: nil, active: true)
+      end
     end
 
     test "invalid http_client" do

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Changed
+
+- Improve `:token` validation, to allow `nil` values when inactive.
+
 ## [0.2.0] - 2021-06-21
 
 ### Changed
