@@ -5,6 +5,7 @@ defmodule Mxpanel do
              |> String.split("<!-- MDOC !-->")
              |> Enum.fetch!(1)
 
+  alias Mxpanel.API
   alias Mxpanel.Batcher
   alias Mxpanel.Client
   alias Mxpanel.Event
@@ -31,10 +32,29 @@ defmodule Mxpanel do
       event_or_events
       |> List.wrap()
       |> Enum.map(&Event.serialize(&1, client.token))
-      |> json_library().encode!()
-      |> Base.encode64()
 
-    track_request(client, %{data: data})
+    API.request(client, "/track", data)
+  end
+
+  @doc """
+  Creates an alias for an existing distinct id.
+
+      Mxpanel.create_alias(client, "distinct_id", "your_alias")
+
+  """
+  @spec create_alias(Client.t(), String.t(), String.t()) :: :ok | {:error, term()}
+  def create_alias(%Client{} = client, distinct_id, alias_id)
+      when is_binary(distinct_id) and is_binary(alias_id) do
+    data = %{
+      "event" => "$create_alias",
+      "properties" => %{
+        "distinct_id" => distinct_id,
+        "alias" => alias_id,
+        "token" => client.token
+      }
+    }
+
+    API.request(client, "/track", data)
   end
 
   @doc """
@@ -71,24 +91,5 @@ defmodule Mxpanel do
   @spec json_library :: module()
   def json_library do
     Application.get_env(:mxpanel, :json_library, Jason)
-  end
-
-  defp track_request(client, body) do
-    {http_mod, http_opts} = client.http_client
-
-    url = client.base_url |> URI.parse() |> Map.put(:path, "/track") |> URI.to_string()
-    headers = [{"Accept", "text/plain"}, {"Content-Type", "application/x-www-form-urlencoded"}]
-    encoded_body = URI.encode_query(body)
-
-    case apply(http_mod, :request, [:post, url, headers, encoded_body, http_opts]) do
-      {:ok, %{status: 200, body: "1"}} ->
-        :ok
-
-      {:ok, response} ->
-        {:error, response}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
   end
 end

@@ -5,13 +5,13 @@ defmodule MxpanelTest do
   alias Mxpanel.Client
   alias Mxpanel.Event
 
+  setup do
+    bypass = Bypass.open()
+
+    %{bypass: bypass}
+  end
+
   describe "track/2" do
-    setup do
-      bypass = Bypass.open()
-
-      %{bypass: bypass}
-    end
-
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
       event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
@@ -94,33 +94,10 @@ defmodule MxpanelTest do
 
       assert Mxpanel.track(client, [event_1, event_2]) == :ok
     end
-
-    test "failed request", %{bypass: bypass} do
-      client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
-      event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
-
-      Bypass.expect_once(bypass, "POST", "/track", fn conn ->
-        Plug.Conn.resp(conn, 500, "Internal server error")
-      end)
-
-      assert {:error, %{body: "Internal server error", headers: _, status: 500}} =
-               Mxpanel.track(client, event)
-    end
-
-    test "API down", %{bypass: bypass} do
-      client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
-      event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
-
-      Bypass.down(bypass)
-
-      assert Mxpanel.track(client, event) == {:error, :econnrefused}
-    end
   end
 
   describe "track_later/2" do
-    setup do
-      bypass = Bypass.open()
-
+    setup %{bypass: bypass} do
       batcher_name =
         Module.concat(__MODULE__, "Batcher#{System.unique_integer([:positive, :monotonic])}")
 
@@ -136,7 +113,7 @@ defmodule MxpanelTest do
          flush_jitter: 1_000}
       )
 
-      %{bypass: bypass, batcher_name: batcher_name, token: token}
+      %{batcher_name: batcher_name, token: token}
     end
 
     test "deliver in background event", %{
@@ -224,6 +201,40 @@ defmodule MxpanelTest do
       assert Mxpanel.track_later(batcher_name, [event_1, event_2]) == :ok
 
       Batcher.drain_buffers(batcher_name)
+    end
+  end
+
+  describe "create_alias/3" do
+    test "success request", %{bypass: bypass} do
+      client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
+
+      Bypass.expect_once(bypass, "POST", "/track", fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+        assert %{"data" => payload} = URI.decode_query(body)
+        decoded_payload = Base.decode64!(payload)
+
+        assert Jason.decode!(decoded_payload) == %{
+                 "event" => "$create_alias",
+                 "properties" => %{
+                   "distinct_id" => "other_distinct_id",
+                   "alias" => "your_id",
+                   "token" => "project_token"
+                 }
+               }
+
+        assert Plug.Conn.get_req_header(conn, "content-type") == [
+                 "application/x-www-form-urlencoded"
+               ]
+
+        assert Plug.Conn.get_req_header(conn, "accept") == ["text/plain"]
+
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "text/plain")
+        |> Plug.Conn.resp(200, "1")
+      end)
+
+      assert Mxpanel.create_alias(client, "other_distinct_id", "your_id") == :ok
     end
   end
 end
