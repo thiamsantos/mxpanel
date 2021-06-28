@@ -53,7 +53,7 @@ defmodule Mxpanel.Batcher do
     ],
     http_client: [
       type: {:custom, __MODULE__, :validate_http_client, []},
-      doc: "HTTP client used by the Batcher",
+      doc: "HTTP client used by the Batcher.",
       default: {Mxpanel.HTTPClient.HackneyAdapter, []}
     ],
     pool_size: [
@@ -96,7 +96,7 @@ defmodule Mxpanel.Batcher do
     ],
     debug: [
       type: :boolean,
-      doc: "Enable debug logging",
+      doc: "Enable debug logging.",
       default: false
     ]
   ]

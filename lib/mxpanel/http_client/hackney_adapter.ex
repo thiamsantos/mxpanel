@@ -1,6 +1,6 @@
 defmodule Mxpanel.HTTPClient.HackneyAdapter do
   @moduledoc """
-  Adapter for [hackney](https://github.com/benoitc/hackney).
+  `Mxpanel.HTTPClient` adapter for [hackney](https://github.com/benoitc/hackney).
 
   Remember to add `{:hackney, "~> 1.17"}` to dependencies. Also, you need to
   recompile mxpanel after adding the `:hackney` dependency:
@@ -9,10 +9,6 @@ defmodule Mxpanel.HTTPClient.HackneyAdapter do
   mix deps.clean mxpanel
   mix compile
   ```
-
-  ## Usage
-
-  %Mxpanel.Client{http_client: {Mxpanel.HTTPClient.HackneyAdapter, []}, token: "token"}
 
   """
   @behaviour Mxpanel.HTTPClient
