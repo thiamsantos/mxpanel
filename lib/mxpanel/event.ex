@@ -38,7 +38,7 @@ defmodule Mxpanel.Event do
   #{NimbleOptions.docs(@opts_schema)}
 
   """
-  @spec new(String.t(), String.t(), map()) :: t()
+  @spec new(String.t(), String.t(), map(), Keyword.t()) :: t()
   def new(name, distinct_id, additional_properties \\ %{}, opts \\ [])
       when is_binary(name) and is_binary(distinct_id) and is_map(additional_properties) do
     opts = validate_options!(opts)

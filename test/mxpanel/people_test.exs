@@ -10,7 +10,7 @@ defmodule Mxpanel.PeopleTest do
     %{bypass: bypass}
   end
 
-  describe "set/3" do
+  describe "set/4" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
       properties = %{"Address" => "1313 Mockingbird Lane", "Birthday" => "1948-01-01"}
@@ -89,7 +89,7 @@ defmodule Mxpanel.PeopleTest do
     end
   end
 
-  describe "unset/3" do
+  describe "unset/4" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 
@@ -142,7 +142,7 @@ defmodule Mxpanel.PeopleTest do
     end
   end
 
-  describe "set_once/3" do
+  describe "set_once/4" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
       properties = %{"First login date" => "2013-04-01T13:20:00"}
@@ -197,7 +197,7 @@ defmodule Mxpanel.PeopleTest do
     end
   end
 
-  describe "increment/4" do
+  describe "increment/5" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 
@@ -250,7 +250,7 @@ defmodule Mxpanel.PeopleTest do
     end
   end
 
-  describe "append_item/4" do
+  describe "append_item/5" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 
@@ -303,7 +303,7 @@ defmodule Mxpanel.PeopleTest do
     end
   end
 
-  describe "remove_item/3" do
+  describe "remove_item/5" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 
@@ -356,7 +356,7 @@ defmodule Mxpanel.PeopleTest do
     end
   end
 
-  describe "delete/2" do
+  describe "delete/3" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 

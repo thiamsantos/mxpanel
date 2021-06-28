@@ -3,7 +3,7 @@ defmodule Mxpanel.EventTest do
 
   alias Mxpanel.Event
 
-  describe "new/3" do
+  describe "new/4" do
     test "create new event" do
       event = Event.new("signup", "13793")
 
