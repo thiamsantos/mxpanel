@@ -6,8 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Examples section to readme.
+- `Mxpanel.create_alias/3`.
+- `Mxpanel.People.append_item/5`.
+- `Mxpanel.People.delete/3`.
+- `Mxpanel.People.increment/5`.
+- `Mxpanel.People.remove_item/5`.
+- `Mxpanel.People.set/4`.
+- `Mxpanel.People.set_once/4`.
+- `Mxpanel.People.unset/4`.
+
 ## Changed
 
+- Support custom `:ip` and `:time` for track events.
+- Simplify issue template.
 - Improve `:token` validation, to allow `nil` values when inactive.
 
 ## [0.2.0] - 2021-06-21
