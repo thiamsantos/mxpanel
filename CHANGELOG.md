@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Mxpanel.Groups.delete/4`
+- `Mxpanel.Groups.remove_item/6`
+- `Mxpanel.Groups.set/5`
+- `Mxpanel.Groups.set_once/5`
+- `Mxpanel.Groups.union/5`
+- `Mxpanel.Groups.unset/5`
+
 ## [0.3.0] - 2021-06-28
 
 ### Added

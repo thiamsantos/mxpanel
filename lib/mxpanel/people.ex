@@ -115,7 +115,7 @@ defmodule Mxpanel.People do
   Removes an item from a existing list on the user profile.
   If it does not exist, no updates are made.
 
-      Mxpanel.People.append_item(client, "13793", "Items purchased", "t-shirt")
+      Mxpanel.People.remove_item(client, "13793", "Items purchased", "t-shirt")
 
   """
   @spec remove_item(Client.t(), String.t(), String.t(), String.t(), Keyword.t()) ::
