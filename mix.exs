@@ -2,7 +2,7 @@ defmodule Mxpanel.MixProject do
   use Mix.Project
 
   @name "Mxpanel"
-  @version "0.3.0"
+  @version "0.4.0"
   @description "Client for Mixpanel Ingestion API"
   @repo_url "https://github.com/thiamsantos/mxpanel"
 
