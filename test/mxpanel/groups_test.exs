@@ -10,6 +10,8 @@ defmodule Mxpanel.GroupsTest do
     %{bypass: bypass}
   end
 
+  # TODO simplify tests to validate on operation
+
   describe "set/5" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
@@ -35,7 +37,9 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.set(client, "Company", "Mixpanel", properties) == :ok
+      assert "Company"
+             |> Groups.set("Mixpanel", properties)
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "custom time", %{bypass: bypass} do
@@ -53,14 +57,17 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.set(client, "Company", "Mixpanel", properties, time: time) == :ok
+      assert "Company"
+             |> Groups.set("Mixpanel", properties, time: time)
+             |> Mxpanel.deliver(client) ==
+               :ok
     end
 
     test "invalid time" do
       message = "expected :time to be a positive integer, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
-        Groups.set(%Client{}, "Company", "Mixpanel", %{}, time: :invalid)
+        Groups.set("Company", "Mixpanel", %{}, time: :invalid)
       end
     end
   end
@@ -90,7 +97,9 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.set_once(client, "Company", "Mixpanel", properties) == :ok
+      assert "Company"
+             |> Groups.set_once("Mixpanel", properties)
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "custom time", %{bypass: bypass} do
@@ -108,7 +117,9 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.set_once(client, "Company", "Mixpanel", properties, time: time) == :ok
+      assert "Company"
+             |> Groups.set_once("Mixpanel", properties, time: time)
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 
@@ -137,7 +148,9 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.union(client, "Company", "Mixpanel", properties) == :ok
+      assert "Company"
+             |> Groups.union("Mixpanel", properties)
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "custom time", %{bypass: bypass} do
@@ -155,7 +168,9 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.union(client, "Company", "Mixpanel", properties, time: time) == :ok
+      assert "Company"
+             |> Groups.union("Mixpanel", properties, time: time)
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 
@@ -183,7 +198,10 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.unset(client, "Company", "Mixpanel", ["Days Overdue"]) == :ok
+      assert "Company"
+             |> Groups.unset("Mixpanel", ["Days Overdue"])
+             |> Mxpanel.deliver(client) ==
+               :ok
     end
 
     test "custom time", %{bypass: bypass} do
@@ -200,7 +218,9 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.unset(client, "Company", "Mixpanel", ["Days Overdue"], time: time) == :ok
+      assert "Company"
+             |> Groups.unset("Mixpanel", ["Days Overdue"], time: time)
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 
@@ -228,7 +248,9 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.remove_item(client, "Company", "Mixpanel", "Items purchased", "socks") == :ok
+      assert "Company"
+             |> Groups.remove_item("Mixpanel", "Items purchased", "socks")
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "custom time", %{bypass: bypass} do
@@ -245,17 +267,62 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.remove_item(client, "Company", "Mixpanel", "Items purchased", "socks",
-               time: time
-             ) == :ok
+      assert "Company"
+             |> Groups.remove_item("Mixpanel", "Items purchased", "socks", time: time)
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 
-  # describe "union/4" do
-  #   test "success request", %{bypass: bypass} do
+  describe "union/4" do
+    test "success request", %{bypass: bypass} do
+      client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
+      properties = %{"Items purchased" => ["socks", "shirts"], "Browser" => "ie"}
 
-  #   end
-  # end
+      Bypass.expect_once(bypass, "POST", "/groups", fn conn ->
+        decoded_payload = decode_body(conn)
+
+        assert decoded_payload["$token"] == "project_token"
+        assert decoded_payload["$group_key"] == "Company"
+        assert decoded_payload["$group_id"] == "Mixpanel"
+        assert decoded_payload["$union"] == properties
+        assert is_integer(decoded_payload["$time"])
+
+        assert Plug.Conn.get_req_header(conn, "content-type") == [
+                 "application/x-www-form-urlencoded"
+               ]
+
+        assert Plug.Conn.get_req_header(conn, "accept") == ["text/plain"]
+
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "text/plain")
+        |> Plug.Conn.resp(200, "1")
+      end)
+
+      assert "Company"
+             |> Groups.union("Mixpanel", properties)
+             |> Mxpanel.deliver(client) == :ok
+    end
+
+    test "custom time", %{bypass: bypass} do
+      client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
+      properties = %{"Items purchased" => ["socks", "shirts"], "Browser" => "ie"}
+      time = System.os_time(:second)
+
+      Bypass.expect_once(bypass, "POST", "/groups", fn conn ->
+        decoded_payload = decode_body(conn)
+
+        assert decoded_payload["$time"] == time
+
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "text/plain")
+        |> Plug.Conn.resp(200, "1")
+      end)
+
+      assert "Company"
+             |> Groups.union("Mixpanel", properties, time: time)
+             |> Mxpanel.deliver(client) == :ok
+    end
+  end
 
   describe "delete/4" do
     test "success request", %{bypass: bypass} do
@@ -281,7 +348,9 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.delete(client, "Company", "Mixpanel") == :ok
+      assert "Company"
+             |> Groups.delete("Mixpanel")
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "custom time", %{bypass: bypass} do
@@ -298,7 +367,9 @@ defmodule Mxpanel.GroupsTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert Groups.delete(client, "Company", "Mixpanel", time: time) == :ok
+      assert "Company"
+             |> Groups.delete("Mixpanel", time: time)
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 

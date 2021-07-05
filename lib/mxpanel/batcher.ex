@@ -152,10 +152,10 @@ defmodule Mxpanel.Batcher do
   end
 
   @doc false
-  def enqueue(batcher_name, event_or_events) do
+  def enqueue(batcher_name, operation_or_operations) do
     batcher_name
     |> Manager.checkout()
-    |> Buffer.enqueue(event_or_events)
+    |> Buffer.enqueue(operation_or_operations)
   end
 
   @doc false

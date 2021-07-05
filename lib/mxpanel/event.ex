@@ -56,11 +56,10 @@ defmodule Mxpanel.Event do
   @doc """
   Serialize a event into the format expected by the Mixpanel API.
   """
-  @spec serialize(t(), String.t()) :: map()
-  def serialize(%__MODULE__{} = event, token) when is_binary(token) do
+  @spec serialize(t()) :: map()
+  def serialize(%__MODULE__{} = event) do
     properties = %{
       "distinct_id" => event.distinct_id,
-      "token" => token,
       "$insert_id" => event.insert_id,
       "time" => event.time
     }

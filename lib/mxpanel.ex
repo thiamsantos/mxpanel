@@ -9,6 +9,64 @@ defmodule Mxpanel do
   alias Mxpanel.Batcher
   alias Mxpanel.Client
   alias Mxpanel.Event
+  alias Mxpanel.Operation
+
+  # TODO validate and update all docs, moduledocs and examples readme
+
+  # TODO doc
+  # TODO typespec
+  def deliver([], %Client{}), do: :ok
+
+  def deliver(operation_or_operations, %Client{} = client) do
+    path = get_path(operation_or_operations)
+    data = build_data(operation_or_operations, client)
+
+    API.request(client, path, data)
+  end
+
+  defp get_path(operation_or_operations) do
+    endpoints =
+      operation_or_operations
+      |> List.wrap()
+      |> Enum.map(& &1.endpoint)
+      |> Enum.uniq()
+
+    first_endpoint = List.first(endpoints)
+
+    unless Enum.all?(endpoints, fn e -> e == first_endpoint end) do
+      raise ArgumentError,
+            "expected all endpoints to be equal, got different endpoints: #{inspect(endpoints)}"
+    end
+
+    case first_endpoint do
+      :track -> "/track"
+      :engage -> "/engage"
+      :groups -> "/groups"
+    end
+  end
+
+  defp build_data(operations, client) when is_list(operations) do
+    Enum.map(operations, &build_data(&1, client))
+  end
+
+  # TODO refactor
+  defp build_data(%Operation{endpoint: :track, payload: payload}, client) when is_map(payload) do
+    put_in(payload, ["properties", "token"], client.token)
+  end
+
+  defp build_data(%Operation{endpoint: :track, payload: payload}, client) when is_list(payload) do
+    Enum.map(payload, &put_in(&1, ["properties", "token"], client.token))
+  end
+
+  defp build_data(%Operation{endpoint: endpoint, payload: payload}, client)
+       when endpoint in [:engage, :groups] and is_map(payload) do
+    Map.put(payload, "$token", client.token)
+  end
+
+  defp build_data(%Operation{endpoint: endpoint, payload: payload}, client)
+       when endpoint in [:engage, :groups] and is_list(payload) do
+    Enum.map(payload, &Map.put(&1, "$token", client.token))
+  end
 
   @doc """
   Send a single event into Mixpanel.
@@ -26,35 +84,35 @@ defmodule Mxpanel do
       Mxpanel.track(client, [event_1, event_2])
 
   """
-  @spec track(Client.t(), Event.t() | [Event.t()]) :: :ok | {:error, term()}
-  def track(%Client{} = client, event_or_events) do
-    data =
-      event_or_events
-      |> List.wrap()
-      |> Enum.map(&Event.serialize(&1, client.token))
+  # TODO how to support multiple events?
+  # TODO move logic of event to here
+  @spec track(Event.t()) :: Operation.t()
+  def track(%Event{} = event) do
+    payload = Event.serialize(event)
 
-    API.request(client, "/track", data)
+    %Operation{endpoint: :track, payload: payload}
   end
 
   @doc """
   Creates an alias for an existing distinct id.
 
-      Mxpanel.create_alias(client, "distinct_id", "your_alias")
+      "distinct_id"
+      |> Mxpanel.create_alias("your_alias")
+      |> Mxpanel.deliver()
 
   """
-  @spec create_alias(Client.t(), String.t(), String.t()) :: :ok | {:error, term()}
-  def create_alias(%Client{} = client, distinct_id, alias_id)
+  @spec create_alias(String.t(), String.t()) :: Operation.t()
+  def create_alias(distinct_id, alias_id)
       when is_binary(distinct_id) and is_binary(alias_id) do
-    data = %{
+    payload = %{
       "event" => "$create_alias",
       "properties" => %{
         "distinct_id" => distinct_id,
-        "alias" => alias_id,
-        "token" => client.token
+        "alias" => alias_id
       }
     }
 
-    API.request(client, "/track", data)
+    %Operation{endpoint: :track, payload: payload}
   end
 
   @doc """
@@ -75,9 +133,10 @@ defmodule Mxpanel do
   Checkout `Mxpanel.Batcher` for more information.
 
   """
-  @spec track_later(Batcher.name(), Event.t() | [Event.t()]) :: :ok
-  def track_later(batcher_name, event_or_events) when is_atom(batcher_name) do
-    Batcher.enqueue(batcher_name, event_or_events)
+  # TODO update docs
+  @spec deliver_later(Operation.t() | [Operation.t()], Batcher.name()) :: :ok
+  def deliver_later(operation_or_operations, batcher_name) when is_atom(batcher_name) do
+    Batcher.enqueue(batcher_name, operation_or_operations)
   end
 
   @doc """

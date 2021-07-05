@@ -57,13 +57,12 @@ defmodule Mxpanel.EventTest do
     test "serialize event" do
       event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
 
-      actual = Event.serialize(event, "project_token")
+      actual = Event.serialize(event)
 
       assert actual == %{
                "event" => "signup",
                "properties" => %{
                  "distinct_id" => "13793",
-                 "token" => "project_token",
                  "$insert_id" => event.insert_id,
                  "time" => event.time,
                  "Favourite Color" => "Red"
@@ -74,13 +73,12 @@ defmodule Mxpanel.EventTest do
     test "serialize with custom ip" do
       event = Event.new("signup", "13793", %{"Favourite Color" => "Red"}, ip: "72.229.28.185")
 
-      actual = Event.serialize(event, "project_token")
+      actual = Event.serialize(event)
 
       assert actual == %{
                "event" => "signup",
                "properties" => %{
                  "distinct_id" => "13793",
-                 "token" => "project_token",
                  "$insert_id" => event.insert_id,
                  "time" => event.time,
                  "Favourite Color" => "Red",

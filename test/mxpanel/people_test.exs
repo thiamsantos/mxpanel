@@ -10,7 +10,9 @@ defmodule Mxpanel.PeopleTest do
     %{bypass: bypass}
   end
 
-  describe "set/4" do
+  # TODO simplify tests to validate on operation
+
+  describe "set/3" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
       properties = %{"Address" => "1313 Mockingbird Lane", "Birthday" => "1948-01-01"}
@@ -37,7 +39,9 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.set(client, "123", properties) == :ok
+      assert "123"
+             |> People.set(properties)
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "accept options", %{bypass: bypass} do
@@ -57,18 +61,20 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.set(client, "123", properties,
+      assert "123"
+             |> People.set(properties,
                time: time,
                ip: "123.123.123.123",
                ignore_time: true
-             ) == :ok
+             )
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "invalid time" do
       message = "expected :time to be a positive integer, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
-        People.set(%Client{}, "123", %{}, time: :invalid)
+        People.set("123", %{}, time: :invalid)
       end
     end
 
@@ -76,7 +82,7 @@ defmodule Mxpanel.PeopleTest do
       message = "expected :ip to be a string, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
-        People.set(%Client{}, "123", %{}, ip: :invalid)
+        People.set("123", %{}, ip: :invalid)
       end
     end
 
@@ -84,12 +90,12 @@ defmodule Mxpanel.PeopleTest do
       message = "expected :ignore_time to be a boolean, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
-        People.set(%Client{}, "123", %{}, ignore_time: :invalid)
+        People.set("123", %{}, ignore_time: :invalid)
       end
     end
   end
 
-  describe "unset/4" do
+  describe "unset/3" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 
@@ -115,7 +121,9 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.unset(client, "123", ["Days Overdue"]) == :ok
+      assert "123"
+             |> People.unset(["Days Overdue"])
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "accepts options", %{bypass: bypass} do
@@ -134,15 +142,17 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.unset(client, "123", ["Days Overdue"],
+      assert "123"
+             |> People.unset(["Days Overdue"],
                time: time,
                ip: "123.123.123.123",
                ignore_time: true
-             ) == :ok
+             )
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 
-  describe "set_once/4" do
+  describe "set_once/3" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
       properties = %{"First login date" => "2013-04-01T13:20:00"}
@@ -169,7 +179,9 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.set_once(client, "123", properties) == :ok
+      assert "123"
+             |> People.set_once(properties)
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "accepts options", %{bypass: bypass} do
@@ -189,15 +201,17 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.set_once(client, "123", properties,
+      assert "123"
+             |> People.set_once(properties,
                time: time,
                ip: "123.123.123.123",
                ignore_time: true
-             ) == :ok
+             )
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 
-  describe "increment/5" do
+  describe "increment/4" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 
@@ -223,7 +237,9 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.increment(client, "123", "Coins Gathered", 12) == :ok
+      assert "123"
+             |> People.increment("Coins Gathered", 12)
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "accepts options", %{bypass: bypass} do
@@ -242,15 +258,17 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.increment(client, "123", "Coins Gathered", 12,
+      assert "123"
+             |> People.increment("Coins Gathered", 12,
                time: time,
                ip: "123.123.123.123",
                ignore_time: true
-             ) == :ok
+             )
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 
-  describe "append_item/5" do
+  describe "append_item/4" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 
@@ -276,7 +294,9 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.append_item(client, "123", "Power Ups", "Bubble Lead") == :ok
+      assert "123"
+             |> People.append_item("Power Ups", "Bubble Lead")
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "accepts options", %{bypass: bypass} do
@@ -295,15 +315,17 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.append_item(client, "123", "Power Ups", "Bubble Lead",
+      assert "123"
+             |> People.append_item("Power Ups", "Bubble Lead",
                time: time,
                ip: "123.123.123.123",
                ignore_time: true
-             ) == :ok
+             )
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 
-  describe "remove_item/5" do
+  describe "remove_item/4" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 
@@ -329,7 +351,9 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.remove_item(client, "123", "Items purchased", "socks") == :ok
+      assert "123"
+             |> People.remove_item("Items purchased", "socks")
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "accepts options", %{bypass: bypass} do
@@ -348,15 +372,17 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.remove_item(client, "123", "Items purchased", "socks",
+      assert "123"
+             |> People.remove_item("Items purchased", "socks",
                time: time,
                ip: "123.123.123.123",
                ignore_time: true
-             ) == :ok
+             )
+             |> Mxpanel.deliver(client) == :ok
     end
   end
 
-  describe "delete/3" do
+  describe "delete/2" do
     test "success request", %{bypass: bypass} do
       client = %Client{base_url: "http://localhost:#{bypass.port}", token: "project_token"}
 
@@ -383,7 +409,9 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.delete(client, "123") == :ok
+      assert "123"
+             |> People.delete()
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "accept options", %{bypass: bypass} do
@@ -403,19 +431,21 @@ defmodule Mxpanel.PeopleTest do
         |> Plug.Conn.resp(200, "1")
       end)
 
-      assert People.delete(client, "123",
+      assert "123"
+             |> People.delete(
                time: time,
                ignore_time: true,
                ip: "123.123.123.123",
                ignore_alias: true
-             ) == :ok
+             )
+             |> Mxpanel.deliver(client) == :ok
     end
 
     test "invalid ignore_alias" do
       message = "expected :ignore_alias to be a boolean, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
-        People.delete(%Client{}, "123", ignore_alias: :invalid)
+        People.delete("123", ignore_alias: :invalid)
       end
     end
   end
