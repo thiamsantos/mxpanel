@@ -4,7 +4,7 @@ defmodule Mxpanel.BatcherTest do
   import Mox
   import ExUnit.CaptureLog
   alias Mxpanel.Batcher
-  alias Mxpanel.Event
+  alias Mxpanel.Operation
   alias Mxpanel.HTTPClientMock
 
   @one_year 86_400_000 * 365
@@ -70,7 +70,7 @@ defmodule Mxpanel.BatcherTest do
       )
 
       for i <- 1..50 do
-        Batcher.enqueue(name, Event.new("signup", "#{i}"))
+        Batcher.enqueue(name, build_operation("signup", "#{i}"))
       end
 
       buffer_sizes =
@@ -117,7 +117,7 @@ defmodule Mxpanel.BatcherTest do
       )
 
       for i <- 1..200 do
-        Batcher.enqueue(name, Event.new("signup", "#{i}"))
+        Batcher.enqueue(name, build_operation("signup", "#{i}"))
       end
 
       assert_receive {:telemetry, [:mxpanel, :batcher, :buffers_info], %{},
@@ -166,7 +166,7 @@ defmodule Mxpanel.BatcherTest do
       end)
 
       for i <- 1..100 do
-        Batcher.enqueue(name, Event.new("signup", "#{i}"))
+        Batcher.enqueue(name, build_operation("signup", "#{i}"))
       end
 
       Batcher.drain_buffers(name)
@@ -191,7 +191,7 @@ defmodule Mxpanel.BatcherTest do
         {:ok, %{body: "0", headers: [], status: 500}}
       end)
 
-      Batcher.enqueue(name, Event.new("signup", "1"))
+      Batcher.enqueue(name, build_operation("signup", "1"))
 
       Batcher.drain_buffers(name)
     end
@@ -217,19 +217,19 @@ defmodule Mxpanel.BatcherTest do
 
       logs =
         capture_log(fn ->
-          Batcher.enqueue(name, Event.new("signup", "1"))
+          Batcher.enqueue(name, build_operation("signup", "1"))
 
           Batcher.drain_buffers(name)
         end)
 
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 1 to import batch of 1 events"
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 2 to import batch of 1 events"
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 3 to import batch of 1 events"
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 4 to import batch of 1 events"
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 5 to import batch of 1 events"
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 1 to import batch of 1 operations"
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 2 to import batch of 1 operations"
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 3 to import batch of 1 operations"
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 4 to import batch of 1 operations"
+      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 5 to import batch of 1 operations"
 
       assert logs =~
-               "[debug] [mxpanel] [#{inspect(name)}] Failed to import a batch of 1 events after 5 attempts"
+               "[debug] [mxpanel] [#{inspect(name)}] Failed to import a batch of 1 operations after 5 attempts"
     end
 
     test "do not call api when inactive" do
@@ -247,10 +247,23 @@ defmodule Mxpanel.BatcherTest do
          active: false}
       )
 
-      Batcher.enqueue(name, Event.new("signup", "1"))
+      Batcher.enqueue(name, build_operation("signup", "1"))
 
       Batcher.drain_buffers(name)
     end
+  end
+
+  defp build_operation(event, distinc_id) do
+    payload = %{
+      "event" => event,
+      "properties" => %{
+        "$insert_id" => "insert_id",
+        "distinct_id" => distinc_id,
+        "time" => System.os_time(:second)
+      }
+    }
+
+    %Operation{endpoint: :track, payload: payload}
   end
 
   def gen_name do

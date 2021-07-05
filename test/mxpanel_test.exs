@@ -36,8 +36,7 @@ defmodule MxpanelTest do
                "event" => "$create_alias",
                "properties" => %{
                  "distinct_id" => "other_distinct_id",
-                 "alias" => "your_id",
-                 "token" => "project_token"
+                 "alias" => "your_id"
                }
              }
     end
