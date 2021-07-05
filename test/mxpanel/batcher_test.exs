@@ -222,11 +222,20 @@ defmodule Mxpanel.BatcherTest do
           Batcher.drain_buffers(name)
         end)
 
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 1 to import batch of 1 operations"
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 2 to import batch of 1 operations"
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 3 to import batch of 1 operations"
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 4 to import batch of 1 operations"
-      assert logs =~ "[debug] [mxpanel] [#{inspect(name)}] Attempt 5 to import batch of 1 operations"
+      assert logs =~
+               "[debug] [mxpanel] [#{inspect(name)}] Attempt 1 to import batch of 1 operations"
+
+      assert logs =~
+               "[debug] [mxpanel] [#{inspect(name)}] Attempt 2 to import batch of 1 operations"
+
+      assert logs =~
+               "[debug] [mxpanel] [#{inspect(name)}] Attempt 3 to import batch of 1 operations"
+
+      assert logs =~
+               "[debug] [mxpanel] [#{inspect(name)}] Attempt 4 to import batch of 1 operations"
+
+      assert logs =~
+               "[debug] [mxpanel] [#{inspect(name)}] Attempt 5 to import batch of 1 operations"
 
       assert logs =~
                "[debug] [mxpanel] [#{inspect(name)}] Failed to import a batch of 1 operations after 5 attempts"

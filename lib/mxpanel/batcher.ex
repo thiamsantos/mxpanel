@@ -152,6 +152,8 @@ defmodule Mxpanel.Batcher do
   end
 
   @doc false
+  # TODO round robin between buffer of the same type
+  # TODO start buffer for each endpoint
   def enqueue(batcher_name, operation_or_operations) do
     batcher_name
     |> Manager.checkout()
