@@ -8,13 +8,131 @@ defmodule Mxpanel do
   alias Mxpanel.API
   alias Mxpanel.Batcher
   alias Mxpanel.Client
-  alias Mxpanel.Event
   alias Mxpanel.Operation
 
   # TODO validate and update all docs, moduledocs and examples readme
 
-  # TODO doc
-  # TODO typespec
+  @event_opts_schema [
+    time: [
+      type: :pos_integer,
+      doc: "Specific timestamp in seconds of the event. Defaults to `System.os_time(:second)`."
+    ],
+    ip: [
+      type: :string,
+      doc: "IP address to get automatic geolocation info."
+    ]
+  ]
+
+  @doc """
+  Send a single event into Mixpanel.
+
+      client = %Mxpanel.Client{token: "mixpanel project token"}
+      event = Mxpanel.Event.new("signup", "123")
+      Mxpanel.track(client, event)
+
+  Import a batch of events into Mixpanel.
+
+      client = %Mxpanel.Client{token: "mixpanel project token"}
+      event_1 = Mxpanel.Event.new("signup", "123")
+      event_2 = Mxpanel.Event.new("signup", "456")
+
+      Mxpanel.track(client, [event_1, event_2])
+
+        Create a new event.
+
+      Mxpanel.Event.new("signup", "13793")
+      Mxpanel.Event.new("signup", "13793", %{"Favourite Color" => "Red"})
+      Mxpanel.Event.new("signup", "13793", %{}, ip: "72.229.28.185")
+      Mxpanel.Event.new("signup", "13793", %{}, time: 1624811298)
+
+
+  ## Options
+
+  #{NimbleOptions.docs(@event_opts_schema)}
+
+  """
+  # TODO Document multiple events
+  @spec track(String.t(), String.t(), map(), Keyword.t()) :: Operation.t()
+  def track(name, distinct_id, additional_properties \\ %{}, opts \\ [])
+      when is_binary(name) and is_binary(distinct_id) and is_map(additional_properties) do
+    payload = build_event(name, distinct_id, additional_properties, opts)
+
+    %Operation{endpoint: :track, payload: payload}
+  end
+
+  def build_event(name, distinct_id, additional_properties \\ %{}, opts \\ []) do
+    opts = validate_options!(opts)
+
+    properties = %{
+      "distinct_id" => distinct_id,
+      "$insert_id" => unique_insert_id(),
+      "time" => Keyword.get(opts, :time, System.os_time(:second))
+    }
+
+    %{
+      "event" => name,
+      "properties" =>
+        additional_properties
+        |> Map.merge(properties)
+        |> maybe_put("ip", Keyword.get(opts, :ip), fn ip -> is_binary(ip) end)
+    }
+  end
+
+  defp validate_options!(opts) do
+    case NimbleOptions.validate(opts, @event_opts_schema) do
+      {:ok, opts} ->
+        opts
+
+      {:error, %NimbleOptions.ValidationError{message: message}} ->
+        raise ArgumentError, message
+    end
+  end
+
+  defp maybe_put(map, key, value, condition) do
+    if condition.(value) do
+      Map.put(map, key, value)
+    else
+      map
+    end
+  end
+
+  defp unique_insert_id do
+    32
+    |> :crypto.strong_rand_bytes()
+    |> Base.encode64(padding: false)
+  end
+
+  @doc """
+  Creates an alias for an existing distinct id.
+
+      "distinct_id"
+      |> Mxpanel.create_alias("your_alias")
+      |> Mxpanel.deliver()
+
+  """
+  @spec create_alias(String.t(), String.t()) :: Operation.t()
+  def create_alias(distinct_id, alias_id)
+      when is_binary(distinct_id) and is_binary(alias_id) do
+    payload = %{
+      "event" => "$create_alias",
+      "properties" => %{
+        "distinct_id" => distinct_id,
+        "alias" => alias_id
+      }
+    }
+
+    %Operation{endpoint: :track, payload: payload}
+  end
+
+  @doc """
+  Deliver an operation to the mixpanel API using the configured HTTP client.
+
+      Mxpanel.deliver(operation, client)
+      Mxpanel.deliver([operation_1, operation_2], client)
+
+  """
+  @spec deliver(Operation.t() | [Operation.t()], Client.t()) :: :ok | {:error, term()}
+
   def deliver([], %Client{}), do: :ok
 
   def deliver(operation_or_operations, %Client{} = client) do
@@ -49,70 +167,13 @@ defmodule Mxpanel do
     Enum.map(operations, &build_data(&1, client))
   end
 
-  # TODO refactor
   defp build_data(%Operation{endpoint: :track, payload: payload}, client) when is_map(payload) do
     put_in(payload, ["properties", "token"], client.token)
-  end
-
-  defp build_data(%Operation{endpoint: :track, payload: payload}, client) when is_list(payload) do
-    Enum.map(payload, &put_in(&1, ["properties", "token"], client.token))
   end
 
   defp build_data(%Operation{endpoint: endpoint, payload: payload}, client)
        when endpoint in [:engage, :groups] and is_map(payload) do
     Map.put(payload, "$token", client.token)
-  end
-
-  defp build_data(%Operation{endpoint: endpoint, payload: payload}, client)
-       when endpoint in [:engage, :groups] and is_list(payload) do
-    Enum.map(payload, &Map.put(&1, "$token", client.token))
-  end
-
-  @doc """
-  Send a single event into Mixpanel.
-
-      client = %Mxpanel.Client{token: "mixpanel project token"}
-      event = Mxpanel.Event.new("signup", "123")
-      Mxpanel.track(client, event)
-
-  Import a batch of events into Mixpanel.
-
-      client = %Mxpanel.Client{token: "mixpanel project token"}
-      event_1 = Mxpanel.Event.new("signup", "123")
-      event_2 = Mxpanel.Event.new("signup", "456")
-
-      Mxpanel.track(client, [event_1, event_2])
-
-  """
-  # TODO Document multiple events
-  # TODO move logic of event to here
-  @spec track(Event.t()) :: Operation.t()
-  def track(%Event{} = event) do
-    payload = Event.serialize(event)
-
-    %Operation{endpoint: :track, payload: payload}
-  end
-
-  @doc """
-  Creates an alias for an existing distinct id.
-
-      "distinct_id"
-      |> Mxpanel.create_alias("your_alias")
-      |> Mxpanel.deliver()
-
-  """
-  @spec create_alias(String.t(), String.t()) :: Operation.t()
-  def create_alias(distinct_id, alias_id)
-      when is_binary(distinct_id) and is_binary(alias_id) do
-    payload = %{
-      "event" => "$create_alias",
-      "properties" => %{
-        "distinct_id" => distinct_id,
-        "alias" => alias_id
-      }
-    }
-
-    %Operation{endpoint: :track, payload: payload}
   end
 
   @doc """

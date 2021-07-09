@@ -3,31 +3,62 @@ defmodule MxpanelTest do
 
   alias Mxpanel.Batcher
   alias Mxpanel.Client
-  alias Mxpanel.Event
   alias Mxpanel.Operation
 
   describe "track/2" do
-    test "success request" do
-      event = Event.new("signup", "13793", %{"Favourite Color" => "Red"})
-
-      operation = Mxpanel.track(event)
+    test "build operation" do
+      operation = Mxpanel.track("signup", "13793")
 
       assert operation.endpoint == :track
 
-      assert operation.payload == %{
-               "event" => "signup",
-               "properties" => %{
-                 "$insert_id" => event.insert_id,
-                 "Favourite Color" => "Red",
-                 "distinct_id" => "13793",
-                 "time" => event.time
-               }
-             }
+      assert operation.payload["event"] == "signup"
+      assert operation.payload["properties"]["distinct_id"] == "13793"
+
+      assert String.length(operation.payload["properties"]["$insert_id"]) == 43
+      assert is_integer(operation.payload["properties"]["time"])
+      assert Map.has_key?(operation.payload["properties"], "ip") == false
+    end
+
+    test "additional properties" do
+      operation = Mxpanel.track("signup", "13793", %{"Favourite Color" => "Red"})
+
+      assert operation.payload["event"] == "signup"
+      assert operation.payload["properties"]["distinct_id"] == "13793"
+      assert operation.payload["properties"]["Favourite Color"] == "Red"
+    end
+
+    test "custom time" do
+      time = 1234
+
+      operation = Mxpanel.track("signup", "13793", %{}, time: time)
+      assert operation.payload["properties"]["time"] == time
+    end
+
+    test "custom ip" do
+      operation = Mxpanel.track("signup", "13793", %{}, ip: "123.123.123.123")
+
+      assert operation.payload["properties"]["ip"] == "123.123.123.123"
+    end
+
+    test "invalid time" do
+      message = "expected :time to be a positive integer, got: :invalid"
+
+      assert_raise ArgumentError, message, fn ->
+        Mxpanel.track("signup", "13793", %{}, time: :invalid)
+      end
+    end
+
+    test "invalid ip" do
+      message = "expected :ip to be a string, got: :invalid"
+
+      assert_raise ArgumentError, message, fn ->
+        Mxpanel.track("signup", "13793", %{}, ip: :invalid)
+      end
     end
   end
 
   describe "create_alias/2" do
-    test "success request" do
+    test "build operation" do
       operation = Mxpanel.create_alias("other_distinct_id", "your_id")
 
       assert operation.endpoint == :track
