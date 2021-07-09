@@ -5,12 +5,9 @@ defmodule Mxpanel.Batcher.Manager do
 
   alias Mxpanel.Batcher.Buffer
 
-  @registry_key :buffers
-  @counter_key :index
-
   defmodule State do
     @moduledoc false
-    defstruct [:batcher_name, :telemetry_buffers_info_interval]
+    defstruct [:batcher_name, :telemetry_buffers_info_interval, :supported_endpoints]
   end
 
   def start_link(opts) do
@@ -20,40 +17,44 @@ defmodule Mxpanel.Batcher.Manager do
   def init(opts) do
     batcher_name = opts[:name]
     telemetry_buffers_info_interval = opts[:telemetry_buffers_info_interval]
+    supported_endpoints = opts[:supported_endpoints]
 
     :ets.new(table_name(batcher_name), [:public, :named_table])
-    :ets.insert(table_name(batcher_name), {@counter_key, -1})
+
+    for endpoint <- supported_endpoints do
+      :ets.insert(table_name(batcher_name), {endpoint, -1})
+    end
 
     state = %State{
       batcher_name: batcher_name,
-      telemetry_buffers_info_interval: telemetry_buffers_info_interval
+      telemetry_buffers_info_interval: telemetry_buffers_info_interval,
+      supported_endpoints: supported_endpoints
     }
 
     {:ok, state, {:continue, :schedule_buffers_info}}
   end
 
-  def checkout(batcher_name) do
-    buffers = Registry.lookup(registry_name(batcher_name), @registry_key)
+  def checkout(batcher_name, operation) do
+    buffers = buffers(batcher_name, operation.endpoint)
 
     next_index =
       :ets.update_counter(
         table_name(batcher_name),
-        @counter_key,
+        operation.endpoint,
         {2, 1, Enum.count(buffers) - 1, 0}
       )
 
-    {pid, _value} = Enum.at(buffers, next_index)
-    pid
+    Enum.at(buffers, next_index)
   end
 
-  def register(batcher_name) do
-    Registry.register(registry_name(batcher_name), @registry_key, nil)
+  def register(batcher_name, endpoint) do
+    Registry.register(registry_name(batcher_name), endpoint, nil)
   end
 
-  def buffers(batcher_name) do
+  def buffers(batcher_name, key) do
     batcher_name
     |> registry_name()
-    |> Registry.lookup(@registry_key)
+    |> Registry.lookup(key)
     |> Enum.map(fn {pid, _value} -> pid end)
   end
 
@@ -67,11 +68,13 @@ defmodule Mxpanel.Batcher.Manager do
 
   def handle_info(:buffers_info, %State{} = state) do
     buffer_sizes =
-      state.batcher_name
-      |> registry_name()
-      |> Registry.lookup(@registry_key)
-      |> Enum.map(fn {pid, _value} ->
-        Buffer.get_buffer_size(pid)
+      Map.new(state.supported_endpoints, fn endpoint ->
+        sizes =
+          state.batcher_name
+          |> buffers(endpoint)
+          |> Enum.map(fn pid -> Buffer.get_buffer_size(pid) end)
+
+        {endpoint, sizes}
       end)
 
     :telemetry.execute(

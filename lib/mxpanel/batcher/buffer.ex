@@ -14,7 +14,7 @@ defmodule Mxpanel.Batcher.Buffer do
 
     defstruct [
       :batcher_name,
-      :events,
+      :operations,
       :client,
       :flush_interval,
       :flush_jitter,
@@ -22,7 +22,8 @@ defmodule Mxpanel.Batcher.Buffer do
       :retry_base_backoff,
       :import_timeout,
       :debug,
-      :active
+      :active,
+      :endpoint
     ]
   end
 
@@ -43,7 +44,7 @@ defmodule Mxpanel.Batcher.Buffer do
 
     state = %State{
       batcher_name: batcher_name,
-      events: Queue.new(),
+      operations: Queue.new(),
       client: client,
       flush_interval: opts[:flush_interval],
       flush_jitter: opts[:flush_jitter],
@@ -51,16 +52,17 @@ defmodule Mxpanel.Batcher.Buffer do
       retry_base_backoff: opts[:retry_base_backoff],
       import_timeout: opts[:import_timeout],
       debug: opts[:debug],
-      active: opts[:active]
+      active: opts[:active],
+      endpoint: opts[:endpoint]
     }
 
-    Manager.register(batcher_name)
+    Manager.register(batcher_name, state.endpoint)
 
     {:ok, state, {:continue, :schedule_flush}}
   end
 
-  def enqueue(pid, event_or_events) do
-    GenServer.cast(pid, {:enqueue, event_or_events})
+  def enqueue(pid, operation) do
+    GenServer.cast(pid, {:enqueue, operation})
   end
 
   def get_buffer_size(pid) do
@@ -74,28 +76,28 @@ defmodule Mxpanel.Batcher.Buffer do
   end
 
   def handle_call(:get_buffer_size, _from, state) do
-    {:reply, state.events.size, state}
+    {:reply, state.operations.size, state}
   end
 
   def handle_call(:drain, _from, state) do
     flush(state)
 
-    {:reply, :ok, %{state | events: Queue.new()}}
+    {:reply, :ok, %{state | operations: Queue.new()}}
   end
 
-  def handle_cast({:enqueue, event_or_events}, state) do
-    {:noreply, %{state | events: Queue.add(state.events, event_or_events)}}
+  def handle_cast({:enqueue, operation}, state) do
+    {:noreply, %{state | operations: Queue.add(state.operations, operation)}}
   end
 
   def handle_info(:flush, state) do
     flush(state)
     schedule_flush(state)
 
-    {:noreply, %{state | events: Queue.new()}}
+    {:noreply, %{state | operations: Queue.new()}}
   end
 
   defp flush(state) do
-    state.events
+    state.operations
     |> Queue.to_list()
     |> Enum.chunk_every(@batch_size)
     |> Task.async_stream(
@@ -111,7 +113,7 @@ defmodule Mxpanel.Batcher.Buffer do
   defp track_many(state, batch, attempts \\ 1) do
     if state.debug == true do
       Logger.debug(
-        "[mxpanel] [#{inspect(state.batcher_name)}] Attempt #{attempts} to import batch of #{Enum.count(batch)} events"
+        "[mxpanel] [#{inspect(state.batcher_name)}] Attempt #{attempts} to import batch of #{Enum.count(batch)} operations"
       )
     end
 
@@ -124,7 +126,7 @@ defmodule Mxpanel.Batcher.Buffer do
           if state.debug == true do
             Logger.debug(
               "[mxpanel] [#{inspect(state.batcher_name)}] Failed to import a batch " <>
-                "of #{Enum.count(batch)} events after #{state.retry_max_attempts} attempts"
+                "of #{Enum.count(batch)} operations after #{state.retry_max_attempts} attempts"
             )
           end
 
@@ -141,7 +143,7 @@ defmodule Mxpanel.Batcher.Buffer do
 
   defp call_api(state, batch) do
     if state.active do
-      Mxpanel.track(state.client, batch)
+      Mxpanel.deliver(batch, state.client)
     else
       :ok
     end

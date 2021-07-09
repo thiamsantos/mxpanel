@@ -34,69 +34,45 @@ end
 client = %Mxpanel.Client{token: "<mixpanel project token>"}
 
 # track an event
-event = Mxpanel.Event.new("signup", "billybob")
-Mxpanel.track(client, event)
+"signup"
+|> Mxpanel.track("billybob")
+|> Mxpanel.deliver(client)
 
 # track an event with optional properties
-event = Mxpanel.Event.new("signup", "billybob", %{"Favourite Color" => "Red"})
-Mxpanel.track(client, event)
+"signup"
+|> Mxpanel.track("billybob", %{"Favourite Color" => "Red"})
+|> Mxpanel.deliver(client)
 
 # set an IP address to get automatic geolocation info
-event = Mxpanel.Event.new("signup", "billybob", %{}, ip: "72.229.28.185")
-Mxpanel.track(client, event)
+"signup"
+|> Mxpanel.track("billybob", %{}, ip: "72.229.28.185")
+|> Mxpanel.deliver(client)
 
 # track an event with a specific timestamp
-event = Mxpanel.Event.new("signup", "billybob", %{}, time: System.os_time(:second) - 60)
-Mxpanel.track(client, event)
+"signup"
+|> Mxpanel.track("billybob", %{}, time: System.os_time(:second) - 60)
+|> Mxpanel.deliver(client)
 
 # track an event in background, the event will be buffered, and later sent in batches
 Mxpanel.Batcher.start_link(name: MyApp.Batcher, token: "<mixpanel project token>")
-event = Mxpanel.Event.new("signup", "billybob")
-Mxpanel.track_later(MyApp.MxpanelBatcher, event)
 
-# Create an alias for an existing distinct id
-Mxpanel.create_alias(client, "distinct_id", "your_alias")
-
-# create or update a user in Mixpanel Engage
-properties = %{"Address" => "1313 Mockingbird Lane", "Birthday" => "1948-01-01"}
-Mxpanel.People.set(client, "billybob", properties)
-
-# create or update a user in Mixpanel Engage without altering $last_seen
-Mxpanel.People.set(client, "billybob", %{plan: "premium"}, ignore_time: true)
-
-# set a user profile's IP address to get automatic geolocation info
-Mxpanel.People.set(client, "billybob", %{plan: "premium"}, ip: "72.229.28.185")
-
-# set properties on a user, don't override
-properties = %{"First login date" => "2013-04-01T13:20:00"}
-Mxpanel.People.set_once(client, "billybob", properties)
-
-# removes the properties
-Mxpanel.People.unset(client, "billybob", ["Address", "Birthday"])
-
-# increment a numeric property
-Mxpanel.People.increment(client, "billybob", "Number of Logins", 12)
-
-# append value to a list
-Mxpanel.People.append_item(client, "billybob", "Items purchased", "socks")
-
-# remove value from a list
-Mxpanel.People.remove_item(client, "billybob", "Items purchased", "t-shirt")
-
-# delete a user
-Mxpanel.People.delete(client, "billybob")
+"signup"
+|> Mxpanel.track("billybob")
+|> Mxpanel.deliver_later(MyApp.MxpanelBatcher)
 
 ```
+
+[Checkout the documentation](https://hexdocs.pm/mxpanel) for complete usage and available functions.
 
 ## Telemetry
 
 Mxpanel currently exposes following Telemetry events:
 
   * `[:mxpanel, :batcher, :buffers_info]` - Dispatched periodically by each
-  running batcher exposing the size of each running buffer in the pool.
+  running batcher exposing the size of each running buffer per endpoint in the pool.
 
     * Measurement: `%{}`
-    * Metadata: `%{batcher_name: atom(), buffer_sizes: [integer()]}`
+    * Metadata: `%{batcher_name: atom(), buffer_sizes: %{atom() => [integer()]}}`
 
 ## Changelog
 

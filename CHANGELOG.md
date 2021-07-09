@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Added
+
+- `Mxpanel.Operation` struct. This struct holds all the information necessary
+to one API operation. It can be delivered alone or grouped in batches.
+- `Mxpanel.deliver/2` function.
+- `Mxpanel.deliver_later/2` function.
+
+## Changed
+
+- All functions were updated to build a `Mxpanel.Operation` instead of
+making a API request directly. The generated operation can be piped to
+`Mxpanel.deliver/2` or `Mxpanel.deliver_later/2` to provide a single interface
+for delivering information to Mixpanel API. This allow all operations to be batched.
+- Default `:pool_size` for `Mxpanel.Batcher` changed from `10` to `System.schedulers_online()`.
+- Buffers info telemetry event metadata changed to return the buffer sizes by supported endpoint.
+
+## Removed
+
+- `Mxpanel.Event` struct. Now the build of the event can be made directly
+in the `Mxpanel.track/4` function.
+- `Mxpanel.track_later/2`. Superseded by `Mxpanel.deliver_later/2`
+
 ## [0.4.0] - 2021-07-02
 
 ### Added
