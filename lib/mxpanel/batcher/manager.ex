@@ -71,11 +71,8 @@ defmodule Mxpanel.Batcher.Manager do
       Map.new(state.supported_endpoints, fn endpoint ->
         sizes =
           state.batcher_name
-          |> registry_name()
-          |> Registry.lookup(endpoint)
-          |> Enum.map(fn {pid, _value} ->
-            Buffer.get_buffer_size(pid)
-          end)
+          |> buffers(endpoint)
+          |> Enum.map(fn pid -> Buffer.get_buffer_size(pid) end)
 
         {endpoint, sizes}
       end)
