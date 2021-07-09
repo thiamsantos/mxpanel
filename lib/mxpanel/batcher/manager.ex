@@ -55,7 +55,7 @@ defmodule Mxpanel.Batcher.Manager do
     batcher_name
     |> registry_name()
     |> Registry.lookup(key)
-    |> Enum.map(fn {pid, _} -> pid end)
+    |> Enum.map(fn {pid, _value} -> pid end)
   end
 
   def registry_name(batcher_name), do: Module.concat(batcher_name, "Registry")

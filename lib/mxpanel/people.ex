@@ -51,9 +51,7 @@ defmodule Mxpanel.People do
   @spec set(String.t(), map(), Keyword.t()) :: Operation.t()
   def set(distinct_id, properties, opts \\ [])
       when is_binary(distinct_id) and is_map(properties) and is_list(opts) do
-    payload =
-      distinct_id
-      |> build_payload("$set", properties, opts)
+    payload = build_payload(distinct_id, "$set", properties, opts)
 
     %Operation{endpoint: :engage, payload: payload}
   end
@@ -71,9 +69,7 @@ defmodule Mxpanel.People do
   @spec set_once(String.t(), map(), Keyword.t()) :: Operation.t()
   def set_once(distinct_id, properties, opts \\ [])
       when is_binary(distinct_id) and is_map(properties) and is_list(opts) do
-    payload =
-      distinct_id
-      |> build_payload("$set_once", properties, opts)
+    payload = build_payload(distinct_id, "$set_once", properties, opts)
 
     %Operation{endpoint: :engage, payload: payload}
   end
@@ -91,9 +87,7 @@ defmodule Mxpanel.People do
   @spec unset(String.t(), [String.t()], Keyword.t()) :: Operation.t()
   def unset(distinct_id, property_names, opts \\ [])
       when is_binary(distinct_id) and is_list(property_names) do
-    payload =
-      distinct_id
-      |> build_payload("$unset", property_names, opts)
+    payload = build_payload(distinct_id, "$unset", property_names, opts)
 
     %Operation{endpoint: :engage, payload: payload}
   end
@@ -114,9 +108,7 @@ defmodule Mxpanel.People do
   def increment(distinct_id, property, amount, opts \\ [])
       when is_binary(distinct_id) and is_binary(property) and is_integer(amount) and
              is_list(opts) do
-    payload =
-      distinct_id
-      |> build_payload("$add", %{property => amount}, opts)
+    payload = build_payload(distinct_id, "$add", %{property => amount}, opts)
 
     %Operation{endpoint: :engage, payload: payload}
   end
@@ -134,9 +126,7 @@ defmodule Mxpanel.People do
           Operation.t()
   def append_item(distinct_id, property, item, opts \\ [])
       when is_binary(distinct_id) and is_binary(property) and is_binary(item) and is_list(opts) do
-    payload =
-      distinct_id
-      |> build_payload("$append", %{property => item}, opts)
+    payload = build_payload(distinct_id, "$append", %{property => item}, opts)
 
     %Operation{endpoint: :engage, payload: payload}
   end
@@ -154,9 +144,7 @@ defmodule Mxpanel.People do
           Operation.t()
   def remove_item(distinct_id, property, item, opts \\ [])
       when is_binary(distinct_id) and is_binary(property) and is_binary(item) and is_list(opts) do
-    payload =
-      distinct_id
-      |> build_payload("$remove", %{property => item}, opts)
+    payload = build_payload(distinct_id, "$remove", %{property => item}, opts)
 
     %Operation{endpoint: :engage, payload: payload}
   end
@@ -179,9 +167,7 @@ defmodule Mxpanel.People do
   @spec delete(String.t(), Keyword.t()) :: Operation.t()
   def delete(distinct_id, opts \\ [])
       when is_binary(distinct_id) and is_list(opts) do
-    payload =
-      distinct_id
-      |> build_payload("$delete", "", opts)
+    payload = build_payload(distinct_id, "$delete", "", opts)
 
     %Operation{endpoint: :engage, payload: payload}
   end

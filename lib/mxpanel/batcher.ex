@@ -121,8 +121,7 @@ defmodule Mxpanel.Batcher do
     pool_size = opts[:pool_size]
 
     buffers_specs =
-      @supported_endpoints
-      |> Enum.flat_map(fn endpoint ->
+      Enum.flat_map(@supported_endpoints, fn endpoint ->
         for index <- 1..pool_size do
           Supervisor.child_spec({Buffer, Keyword.put(opts, :endpoint, endpoint)},
             id: {Buffer, endpoint, index}
