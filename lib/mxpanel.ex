@@ -10,8 +10,6 @@ defmodule Mxpanel do
   alias Mxpanel.Client
   alias Mxpanel.Operation
 
-  # TODO validate and update all docs, moduledocs and examples readme
-
   @event_opts_schema [
     time: [
       type: :pos_integer,
@@ -24,34 +22,33 @@ defmodule Mxpanel do
   ]
 
   @doc """
-  Send a single event into Mixpanel.
+  Tracks an event.
 
-      client = %Mxpanel.Client{token: "mixpanel project token"}
-      event = Mxpanel.Event.new("signup", "123")
-      Mxpanel.track(client, event)
+      "signup"
+      |> Mxpanel.track("13793")
+      |> Mxpanel.deliver()
 
-  Import a batch of events into Mixpanel.
+      "signup"
+      |> Mxpanel.track("13793")
+      |> Mxpanel.deliver()
 
-      client = %Mxpanel.Client{token: "mixpanel project token"}
-      event_1 = Mxpanel.Event.new("signup", "123")
-      event_2 = Mxpanel.Event.new("signup", "456")
+      "signup"
+      |> Mxpanel.track("13793", %{"Favourite Color" => "Red"})
+      |> Mxpanel.deliver()
 
-      Mxpanel.track(client, [event_1, event_2])
+      "signup"
+      |> Mxpanel.track("13793", %{}, ip: "72.229.28.185")
+      |> Mxpanel.deliver()
 
-        Create a new event.
-
-      Mxpanel.Event.new("signup", "13793")
-      Mxpanel.Event.new("signup", "13793", %{"Favourite Color" => "Red"})
-      Mxpanel.Event.new("signup", "13793", %{}, ip: "72.229.28.185")
-      Mxpanel.Event.new("signup", "13793", %{}, time: 1624811298)
-
+      "signup"
+      |> Mxpanel.track("13793", %{}, time: 1624811298)
+      |> Mxpanel.deliver()
 
   ## Options
 
   #{NimbleOptions.docs(@event_opts_schema)}
 
   """
-  # TODO Document multiple events
   @spec track(String.t(), String.t(), map(), Keyword.t()) :: Operation.t()
   def track(name, distinct_id, additional_properties \\ %{}, opts \\ [])
       when is_binary(name) and is_binary(distinct_id) and is_map(additional_properties) do
@@ -60,7 +57,7 @@ defmodule Mxpanel do
     %Operation{endpoint: :track, payload: payload}
   end
 
-  def build_event(name, distinct_id, additional_properties \\ %{}, opts \\ []) do
+  defp build_event(name, distinct_id, additional_properties, opts) do
     opts = validate_options!(opts)
 
     properties = %{
@@ -125,7 +122,7 @@ defmodule Mxpanel do
   end
 
   @doc """
-  Deliver an operation to the mixpanel API using the configured HTTP client.
+  Delivers an operation to the mixpanel API using the configured HTTP client.
 
       Mxpanel.deliver(operation, client)
       Mxpanel.deliver([operation_1, operation_2], client)
@@ -177,24 +174,31 @@ defmodule Mxpanel do
   end
 
   @doc """
-  Enqueues the event. The event will be store in a buffer and sent in batches to mixpanel.
+  Enqueues an operation. The operation will be stored in a buffer and sent in batches to mixpanel.
 
       Mxpanel.Batcher.start_link(name: MyApp.MxpanelBatcher, token: "mixpanel project token")
-      event = Mxpanel.Event.new("signup", "123")
 
-      Mxpanel.track_later(MyApp.MxpanelBatcher, event)
+      "signup"
+      |> Mxpanel.track("13793")
+      |> Mxpanel.deliver_later(MyApp.MxpanelBatcher)
 
+  Sending multiple operations:
+
+      operation_1 = Mxpanel.track("signup", "13793")
+      operation_2 = Mxpanel.track("first login", "13793")
+
+      Mxpanel.deliver_later([operation_1, operation_2], MyApp.MxpanelBatcher)
 
   ## Why use it?
 
   HTTP requests to the Mixpanel API often take time and may fail. If you are
   tracking events during a web request, you probably, don't want to make your
-  users wait the extra time for the mixpanel API call to finish.
+  users wait the extra time for the mixpanel API call to finish. The batcher will
+  enqueue the operations, send them in batches to mixpanel with automatic retries.
 
   Checkout `Mxpanel.Batcher` for more information.
 
   """
-  # TODO update docs
   @spec deliver_later(Operation.t() | [Operation.t()], Batcher.name()) :: :ok
   def deliver_later(operation_or_operations, batcher_name) when is_atom(batcher_name) do
     Batcher.enqueue(batcher_name, operation_or_operations)

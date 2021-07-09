@@ -24,7 +24,10 @@ defmodule Mxpanel.Groups do
   The profile is created if it does not exist.
 
       properties = %{"Address" => "1313 Mockingbird Lane"}
-      Mxpanel.Groups.set(client, "Company", "Mixpanel", properties)
+
+      "Company"
+      |> Mxpanel.Groups.set("Mixpanel", properties)
+      |> Mxpanel.deliver(client)
 
   """
   @spec set(String.t(), String.t(), map(), Keyword.t()) :: Operation.t()
@@ -40,7 +43,10 @@ defmodule Mxpanel.Groups do
   The profile is created if it does not exist.
 
       properties = %{"Address" => "1313 Mockingbird Lane"}
-      Mxpanel.Groups.set_once(client, "Company", "Mixpanel", properties)
+
+      "Company"
+      |> Mxpanel.Groups.set_once("Mixpanel", properties)
+      |> Mxpanel.deliver(client)
 
   """
   @spec set_once(String.t(), String.t(), map(), Keyword.t()) :: Operation.t()
@@ -55,7 +61,9 @@ defmodule Mxpanel.Groups do
   Unsets specific properties on the group profile.
 
       property_names = ["Items purchased"]
-      Mxpanel.Groups.unset(client, "Company", "Mixpanel", property_names)
+      "Company"
+      |> Mxpanel.Groups.unset("Mixpanel", property_names)
+      |> Mxpanel.deliver(client)
 
   """
   @spec unset(String.t(), String.t(), [String.t()], Keyword.t()) ::
@@ -70,7 +78,9 @@ defmodule Mxpanel.Groups do
   @doc """
   Removes a specific value in a list property.
 
-      Mxpanel.Groups.remove_item(client, "Company", "Mixpanel", "Items purchased", "t-shirt")
+      "Company"
+      |> Mxpanel.Groups.remove_item("Mixpanel", "Items purchased", "t-shirt")
+      |> Mxpanel.deliver(client)
 
   """
   @spec remove_item(String.t(), String.t(), String.t(), String.t(), Keyword.t()) ::
@@ -86,7 +96,9 @@ defmodule Mxpanel.Groups do
   @doc """
   Deletes a group profile from Mixpanel.
 
-      Mxpanel.Groups.delete(client, "Company", "Mixpanel")
+      "Company"
+      |> Mxpanel.Groups.delete("Mixpanel")
+      |> Mxpanel.deliver(client)
 
   """
   @spec delete(String.t(), String.t(), Keyword.t()) :: Operation.t()
@@ -102,7 +114,10 @@ defmodule Mxpanel.Groups do
   that those values only appear once.
 
       properties = %{"Items purchased" => ["socks", "shirts"], "Browser" => "ie"}
-      Mxpanel.Groups.union(client, "Company", "Mixpanel", properties)
+
+      "Company"
+      |> Mxpanel.Groups.union("Mixpanel", properties)
+      |> Mxpanel.deliver(client)
 
   """
   @spec union(String.t(), String.t(), map(), Keyword.t()) :: Operation.t()

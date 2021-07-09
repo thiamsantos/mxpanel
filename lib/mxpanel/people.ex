@@ -42,7 +42,10 @@ defmodule Mxpanel.People do
   If it does exist, it sets the properties to these values, overwriting existing values.
 
       properties = %{"Address" => "1313 Mockingbird Lane", "Birthday" => "1948-01-01"}
-      Mxpanel.People.set(client, "13793", properties)
+
+      "13793"
+      |> Mxpanel.People.set(properties)
+      |> Mxpanel.deliver(client)
 
   """
   @spec set(String.t(), map(), Keyword.t()) :: Operation.t()
@@ -59,7 +62,10 @@ defmodule Mxpanel.People do
   Works just like `set/4` except it will not overwrite existing property values. This is useful for properties like "First login date".
 
       properties = %{"First login date" => "2013-04-01T13:20:00"}
-      Mxpanel.People.set_once(client, "13793", properties)
+
+      "13793"
+      |> Mxpanel.People.set_once(properties)
+      |> Mxpanel.deliver(client)
 
   """
   @spec set_once(String.t(), map(), Keyword.t()) :: Operation.t()
@@ -76,7 +82,10 @@ defmodule Mxpanel.People do
   Takes a list of property names, and permanently removes the properties and their values from a profile.
 
       property_names = ["Address", "Birthday"]
-      Mxpanel.People.unset(client, "13793", property_names)
+
+      "13793"
+      |> Mxpanel.People.unset(property_names)
+      |> Mxpanel.deliver(client)
 
   """
   @spec unset(String.t(), [String.t()], Keyword.t()) :: Operation.t()
@@ -95,7 +104,9 @@ defmodule Mxpanel.People do
   If the property is not present on the profile, the value will be added to 0.
   It is possible to decrement by calling with negative values.
 
-      Mxpanel.People.increment(client, "13793", "Number of Logins", 12)
+      "13793"
+      |> Mxpanel.People.increment("Number of Logins", 12)
+      |> Mxpanel.deliver(client)
 
   """
   @spec increment(String.t(), String.t(), String.t(), Keyword.t()) ::
@@ -114,7 +125,9 @@ defmodule Mxpanel.People do
   Appends the item to a list associated with the corresponding property name.
   Appending to a property that doesn't exist will result in assigning a list with one element to that property.
 
-      Mxpanel.People.append_item(client, "13793", "Items purchased", "socks")
+      "13793"
+      |> Mxpanel.People.append_item("Items purchased", "socks")
+      |> Mxpanel.deliver(client)
 
   """
   @spec append_item(String.t(), String.t(), String.t(), Keyword.t()) ::
@@ -132,7 +145,9 @@ defmodule Mxpanel.People do
   Removes an item from a existing list on the user profile.
   If it does not exist, no updates are made.
 
-      Mxpanel.People.remove_item(client, "13793", "Items purchased", "t-shirt")
+      "13793"
+      |> Mxpanel.People.remove_item("Items purchased", "t-shirt")
+      |> Mxpanel.deliver(client)
 
   """
   @spec remove_item(String.t(), String.t(), String.t(), Keyword.t()) ::
@@ -149,12 +164,16 @@ defmodule Mxpanel.People do
   @doc """
   Permanently delete the profile from Mixpanel, along with all of its properties.
 
-      Mxpanel.People.delete(client, "13793")
+      "13793"
+      |> Mxpanel.People.delete()
+      |> Mxpanel.deliver(client)
 
   If you have duplicate profiles, set `ignore_alias` to true so that you
   don't delete the original profile when trying to delete the duplicate.
 
-      Mxpanel.People.delete(client, "user@mail.com", ignore_alias: true)
+      "user@mail.com"
+      |> Mxpanel.People.delete(ignore_alias: true)
+      |> Mxpanel.deliver(client)
 
   """
   @spec delete(String.t(), Keyword.t()) :: Operation.t()

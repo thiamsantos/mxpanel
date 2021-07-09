@@ -48,7 +48,7 @@ defmodule Mxpanel.Batcher do
     ],
     base_url: [
       type: :string,
-      doc: "Mixpanel API URL",
+      doc: "Mixpanel API URL.",
       default: "https://api.mixpanel.com"
     ],
     http_client: [
