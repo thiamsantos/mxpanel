@@ -181,6 +181,8 @@ defmodule MxpanelTest do
 
       Batcher.drain_buffers(batcher_name)
     end
+
+    # TODO deliver_later tests all operations
   end
 
   describe "deliver/2" do

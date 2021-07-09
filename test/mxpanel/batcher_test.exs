@@ -10,15 +10,16 @@ defmodule Mxpanel.BatcherTest do
   @one_year 86_400_000 * 365
 
   setup :verify_on_exit!
+  # TODO use bypass to run tests async?
   setup :set_mox_global
 
   describe "start_link/1" do
-    test "start batcher" do
+    test "start batcher one buffer per scheduler per supported endpoint" do
       name = gen_name()
       assert {:ok, _pid} = Batcher.start_link(name: name, token: "token")
 
       buffers = Registry.lookup(Module.concat(name, "Registry"), :buffers)
-      assert Enum.count(buffers) == 10
+      assert Enum.count(buffers) == System.schedulers_online() * 3
     end
 
     test "required name" do
@@ -70,18 +71,44 @@ defmodule Mxpanel.BatcherTest do
       )
 
       for i <- 1..50 do
-        Batcher.enqueue(name, build_operation("signup", "#{i}"))
+        Batcher.enqueue(name, build_track_operation("signup", "#{i}"))
+      end
+
+      for i <- 1..40 do
+        Batcher.enqueue(name, build_engage_operation("#{i}"))
+      end
+
+      for i <- 1..30 do
+        Batcher.enqueue(name, build_groups_operation("Company", "#{i}"))
       end
 
       buffer_sizes =
         name
         |> Module.concat("Registry")
         |> Registry.lookup(:buffers)
-        |> Enum.map(fn {pid, _value} ->
-          GenServer.call(pid, :get_buffer_size)
+        |> Enum.map(fn {pid, endpoint} ->
+          {endpoint, GenServer.call(pid, :get_buffer_size)}
         end)
 
-      assert buffer_sizes == [10, 10, 10, 10, 10]
+      expected = [
+        {:track, 10},
+        {:track, 10},
+        {:track, 10},
+        {:track, 10},
+        {:track, 10},
+        {:engage, 8},
+        {:engage, 8},
+        {:engage, 8},
+        {:engage, 8},
+        {:engage, 8},
+        {:groups, 6},
+        {:groups, 6},
+        {:groups, 6},
+        {:groups, 6},
+        {:groups, 6}
+      ]
+
+      assert buffer_sizes == expected
     end
   end
 
@@ -113,17 +140,51 @@ defmodule Mxpanel.BatcherTest do
          token: "token",
          telemetry_buffers_info_interval: 1,
          flush_interval: @one_year,
+         pool_size: 10,
          http_client: {HTTPClientMock, []}}
       )
 
       for i <- 1..200 do
-        Batcher.enqueue(name, build_operation("signup", "#{i}"))
+        Batcher.enqueue(name, build_track_operation("signup", "#{i}"))
       end
+
+      buffer_sizes = [
+        {:track, 20},
+        {:track, 20},
+        {:track, 20},
+        {:track, 20},
+        {:track, 20},
+        {:track, 20},
+        {:track, 20},
+        {:track, 20},
+        {:track, 20},
+        {:track, 20},
+        {:engage, 0},
+        {:engage, 0},
+        {:engage, 0},
+        {:engage, 0},
+        {:engage, 0},
+        {:engage, 0},
+        {:engage, 0},
+        {:engage, 0},
+        {:engage, 0},
+        {:engage, 0},
+        {:groups, 0},
+        {:groups, 0},
+        {:groups, 0},
+        {:groups, 0},
+        {:groups, 0},
+        {:groups, 0},
+        {:groups, 0},
+        {:groups, 0},
+        {:groups, 0},
+        {:groups, 0}
+      ]
 
       assert_receive {:telemetry, [:mxpanel, :batcher, :buffers_info], %{},
                       %{
                         batcher_name: ^name,
-                        buffer_sizes: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
+                        buffer_sizes: ^buffer_sizes
                       }, _config}
     end
   end
@@ -166,7 +227,7 @@ defmodule Mxpanel.BatcherTest do
       end)
 
       for i <- 1..100 do
-        Batcher.enqueue(name, build_operation("signup", "#{i}"))
+        Batcher.enqueue(name, build_track_operation("signup", "#{i}"))
       end
 
       Batcher.drain_buffers(name)
@@ -191,7 +252,7 @@ defmodule Mxpanel.BatcherTest do
         {:ok, %{body: "0", headers: [], status: 500}}
       end)
 
-      Batcher.enqueue(name, build_operation("signup", "1"))
+      Batcher.enqueue(name, build_track_operation("signup", "1"))
 
       Batcher.drain_buffers(name)
     end
@@ -217,7 +278,7 @@ defmodule Mxpanel.BatcherTest do
 
       logs =
         capture_log(fn ->
-          Batcher.enqueue(name, build_operation("signup", "1"))
+          Batcher.enqueue(name, build_track_operation("signup", "1"))
 
           Batcher.drain_buffers(name)
         end)
@@ -256,23 +317,134 @@ defmodule Mxpanel.BatcherTest do
          active: false}
       )
 
-      Batcher.enqueue(name, build_operation("signup", "1"))
+      Batcher.enqueue(name, build_track_operation("signup", "1"))
+
+      Batcher.drain_buffers(name)
+    end
+
+    test "publishes engage endpoint operations" do
+      name = gen_name()
+
+      start_supervised!(
+        {Batcher,
+         name: name,
+         token: "token",
+         pool_size: 1,
+         telemetry_buffers_info_interval: 1,
+         http_client: {HTTPClientMock, []},
+         flush_interval: 100,
+         flush_jitter: 100}
+      )
+
+      expect(HTTPClientMock, :request, 2, fn :post, url, headers, body, opts ->
+        assert url == "https://api.mixpanel.com/engage"
+
+        assert headers == [
+                 {"Accept", "text/plain"},
+                 {"Content-Type", "application/x-www-form-urlencoded"}
+               ]
+
+        assert opts == []
+
+        events =
+          body
+          |> URI.decode_query()
+          |> Map.fetch!("data")
+          |> Base.decode64!()
+          |> Jason.decode!()
+
+        assert Enum.count(events) == 50
+
+        {:ok, %{body: "1", headers: [], status: 200}}
+      end)
+
+      for i <- 1..100 do
+        Batcher.enqueue(name, build_engage_operation("#{i}"))
+      end
+
+      Batcher.drain_buffers(name)
+    end
+
+    test "publishes groups endpoint operations" do
+      name = gen_name()
+
+      start_supervised!(
+        {Batcher,
+         name: name,
+         token: "token",
+         pool_size: 1,
+         telemetry_buffers_info_interval: 1,
+         http_client: {HTTPClientMock, []},
+         flush_interval: 100,
+         flush_jitter: 100}
+      )
+
+      expect(HTTPClientMock, :request, 2, fn :post, url, headers, body, opts ->
+        assert url == "https://api.mixpanel.com/groups"
+
+        assert headers == [
+                 {"Accept", "text/plain"},
+                 {"Content-Type", "application/x-www-form-urlencoded"}
+               ]
+
+        assert opts == []
+
+        events =
+          body
+          |> URI.decode_query()
+          |> Map.fetch!("data")
+          |> Base.decode64!()
+          |> Jason.decode!()
+
+        assert Enum.count(events) == 50
+
+        {:ok, %{body: "1", headers: [], status: 200}}
+      end)
+
+      for i <- 1..100 do
+        Batcher.enqueue(name, build_groups_operation("Company", "#{i}"))
+      end
 
       Batcher.drain_buffers(name)
     end
   end
 
-  defp build_operation(event, distinc_id) do
+  defp build_track_operation(event, distinct_id) do
     payload = %{
       "event" => event,
       "properties" => %{
         "$insert_id" => "insert_id",
-        "distinct_id" => distinc_id,
+        "distinct_id" => distinct_id,
         "time" => System.os_time(:second)
       }
     }
 
     %Operation{endpoint: :track, payload: payload}
+  end
+
+  defp build_engage_operation(distinct_id) do
+    payload = %{
+      "$distinct_id" => distinct_id,
+      "$set" => %{
+        "Address" => "1313 Mockingbird Lane"
+      },
+      "$time" => System.os_time(:second)
+    }
+
+    %Operation{endpoint: :engage, payload: payload}
+  end
+
+  defp build_groups_operation(group_id, group_key) do
+    payload = %{
+      "$group_id" => group_id,
+      "$group_key" => group_key,
+      "$set" => %{
+        "Address" => "1313 Mockingbird Lane"
+      },
+      "$time" => System.os_time(:second)
+    }
+
+    %Operation{endpoint: :groups, payload: payload}
   end
 
   def gen_name do

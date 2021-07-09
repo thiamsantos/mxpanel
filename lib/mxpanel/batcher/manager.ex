@@ -6,7 +6,6 @@ defmodule Mxpanel.Batcher.Manager do
   alias Mxpanel.Batcher.Buffer
 
   @registry_key :buffers
-  @counter_key :index
 
   defmodule State do
     @moduledoc false
@@ -20,9 +19,13 @@ defmodule Mxpanel.Batcher.Manager do
   def init(opts) do
     batcher_name = opts[:name]
     telemetry_buffers_info_interval = opts[:telemetry_buffers_info_interval]
+    supported_endpoints = opts[:supported_endpoints]
 
     :ets.new(table_name(batcher_name), [:public, :named_table])
-    :ets.insert(table_name(batcher_name), {@counter_key, -1})
+
+    for endpoint <- supported_endpoints do
+      :ets.insert(table_name(batcher_name), {endpoint, -1})
+    end
 
     state = %State{
       batcher_name: batcher_name,
@@ -32,29 +35,28 @@ defmodule Mxpanel.Batcher.Manager do
     {:ok, state, {:continue, :schedule_buffers_info}}
   end
 
-  def checkout(batcher_name) do
-    buffers = Registry.lookup(registry_name(batcher_name), @registry_key)
+  def checkout(batcher_name, grouped_buffers, operation) do
+    buffers = Map.fetch!(grouped_buffers, operation.endpoint)
 
     next_index =
       :ets.update_counter(
         table_name(batcher_name),
-        @counter_key,
+        operation.endpoint,
         {2, 1, Enum.count(buffers) - 1, 0}
       )
 
-    {pid, _value} = Enum.at(buffers, next_index)
-    pid
+    Enum.at(buffers, next_index)
   end
 
-  def register(batcher_name) do
-    Registry.register(registry_name(batcher_name), @registry_key, nil)
+  def register(batcher_name, endpoint) do
+    # TODO move to dynamic registry key one per endpoint
+    Registry.register(registry_name(batcher_name), @registry_key, endpoint)
   end
 
   def buffers(batcher_name) do
     batcher_name
     |> registry_name()
     |> Registry.lookup(@registry_key)
-    |> Enum.map(fn {pid, _value} -> pid end)
   end
 
   def registry_name(batcher_name), do: Module.concat(batcher_name, "Registry")
@@ -70,8 +72,8 @@ defmodule Mxpanel.Batcher.Manager do
       state.batcher_name
       |> registry_name()
       |> Registry.lookup(@registry_key)
-      |> Enum.map(fn {pid, _value} ->
-        Buffer.get_buffer_size(pid)
+      |> Enum.map(fn {pid, endpoint} ->
+        {endpoint, Buffer.get_buffer_size(pid)}
       end)
 
     :telemetry.execute(

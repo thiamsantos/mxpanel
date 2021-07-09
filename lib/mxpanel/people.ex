@@ -98,6 +98,7 @@ defmodule Mxpanel.People do
       Mxpanel.People.increment(client, "13793", "Number of Logins", 12)
 
   """
+  # TODO support pass map of properties
   @spec increment(String.t(), String.t(), String.t(), Keyword.t()) ::
           Operation.t()
   def increment(distinct_id, property, amount, opts \\ [])
@@ -117,6 +118,7 @@ defmodule Mxpanel.People do
       Mxpanel.People.append_item(client, "13793", "Items purchased", "socks")
 
   """
+  # TODO support pass map of properties
   @spec append_item(String.t(), String.t(), String.t(), Keyword.t()) ::
           Operation.t()
   def append_item(distinct_id, property, item, opts \\ [])
@@ -135,6 +137,7 @@ defmodule Mxpanel.People do
       Mxpanel.People.remove_item(client, "13793", "Items purchased", "t-shirt")
 
   """
+  # TODO support pass map of properties
   @spec remove_item(String.t(), String.t(), String.t(), Keyword.t()) ::
           Operation.t()
   def remove_item(distinct_id, property, item, opts \\ [])

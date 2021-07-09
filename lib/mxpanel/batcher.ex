@@ -58,8 +58,7 @@ defmodule Mxpanel.Batcher do
     ],
     pool_size: [
       type: :pos_integer,
-      doc: "The size of the pool of event buffers.",
-      default: 10
+      doc: "The size of the pool of event buffers. Defaults to `System.schedulers_online()`."
     ],
     flush_interval: [
       type: :pos_integer,
@@ -101,6 +100,8 @@ defmodule Mxpanel.Batcher do
     ]
   ]
 
+  @supported_endpoints [:track, :engage, :groups]
+
   @doc """
   Starts a `#{inspect(__MODULE__)}` linked to the current process.
 
@@ -120,13 +121,18 @@ defmodule Mxpanel.Batcher do
     pool_size = opts[:pool_size]
 
     buffers_specs =
-      for index <- 1..pool_size do
-        Supervisor.child_spec({Buffer, opts}, id: {Buffer, index})
-      end
+      @supported_endpoints
+      |> Enum.flat_map(fn endpoint ->
+        for index <- 1..pool_size do
+          Supervisor.child_spec({Buffer, Keyword.put(opts, :endpoint, endpoint)},
+            id: {Buffer, endpoint, index}
+          )
+        end
+      end)
 
     children = [
       {Registry, name: Manager.registry_name(name), keys: :duplicate},
-      {Manager, opts},
+      {Manager, Keyword.put(opts, :supported_endpoints, @supported_endpoints)},
       %{
         id: :buffers_supervisor,
         type: :supervisor,
@@ -148,16 +154,23 @@ defmodule Mxpanel.Batcher do
   def drain_buffers(batcher_name) do
     batcher_name
     |> Manager.buffers()
-    |> Enum.each(fn pid -> GenServer.call(pid, :drain) end)
+    |> Enum.each(fn {pid, _} -> GenServer.call(pid, :drain) end)
   end
 
   @doc false
-  # TODO round robin between buffer of the same type
-  # TODO start buffer for each endpoint
   def enqueue(batcher_name, operation_or_operations) do
-    batcher_name
-    |> Manager.checkout()
-    |> Buffer.enqueue(operation_or_operations)
+    grouped_buffers =
+      batcher_name
+      |> Manager.buffers()
+      |> Enum.group_by(fn {_pid, value} -> value end, fn {pid, _value} -> pid end)
+
+    operation_or_operations
+    |> List.wrap()
+    |> Enum.each(fn operation ->
+      batcher_name
+      |> Manager.checkout(grouped_buffers, operation)
+      |> Buffer.enqueue(operation)
+    end)
   end
 
   @doc false
@@ -170,6 +183,8 @@ defmodule Mxpanel.Batcher do
   end
 
   defp validate_options!(opts, schema) do
+    opts = Keyword.put_new(opts, :pool_size, System.schedulers_online())
+
     with {:ok, opts} <- NimbleOptions.validate(opts, schema),
          {:ok, opts} <- validate_token(opts) do
       opts

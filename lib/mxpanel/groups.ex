@@ -73,6 +73,7 @@ defmodule Mxpanel.Groups do
       Mxpanel.Groups.remove_item(client, "Company", "Mixpanel", "Items purchased", "t-shirt")
 
   """
+  # TODO support pass map of properties
   @spec remove_item(String.t(), String.t(), String.t(), String.t(), Keyword.t()) ::
           Operation.t()
   def remove_item(group_key, group_id, property, item, opts \\ [])

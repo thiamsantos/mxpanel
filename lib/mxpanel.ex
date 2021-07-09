@@ -84,7 +84,7 @@ defmodule Mxpanel do
       Mxpanel.track(client, [event_1, event_2])
 
   """
-  # TODO how to support multiple events?
+  # TODO Document multiple events
   # TODO move logic of event to here
   @spec track(Event.t()) :: Operation.t()
   def track(%Event{} = event) do

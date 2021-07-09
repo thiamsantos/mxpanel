@@ -22,7 +22,8 @@ defmodule Mxpanel.Batcher.Buffer do
       :retry_base_backoff,
       :import_timeout,
       :debug,
-      :active
+      :active,
+      :endpoint
     ]
   end
 
@@ -51,16 +52,17 @@ defmodule Mxpanel.Batcher.Buffer do
       retry_base_backoff: opts[:retry_base_backoff],
       import_timeout: opts[:import_timeout],
       debug: opts[:debug],
-      active: opts[:active]
+      active: opts[:active],
+      endpoint: opts[:endpoint]
     }
 
-    Manager.register(batcher_name)
+    Manager.register(batcher_name, state.endpoint)
 
     {:ok, state, {:continue, :schedule_flush}}
   end
 
-  def enqueue(pid, operation_or_operations) do
-    GenServer.cast(pid, {:enqueue, operation_or_operations})
+  def enqueue(pid, operation) do
+    GenServer.cast(pid, {:enqueue, operation})
   end
 
   def get_buffer_size(pid) do
@@ -83,8 +85,8 @@ defmodule Mxpanel.Batcher.Buffer do
     {:reply, :ok, %{state | operations: Queue.new()}}
   end
 
-  def handle_cast({:enqueue, operation_or_operations}, state) do
-    {:noreply, %{state | operations: Queue.add(state.operations, operation_or_operations)}}
+  def handle_cast({:enqueue, operation}, state) do
+    {:noreply, %{state | operations: Queue.add(state.operations, operation)}}
   end
 
   def handle_info(:flush, state) do

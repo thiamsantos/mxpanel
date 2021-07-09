@@ -32,14 +32,5 @@ defmodule Mxpanel.Batcher.QueueTest do
 
       assert queue.items == [2, 1]
     end
-
-    test "support adding many items" do
-      queue =
-        Queue.new()
-        |> Queue.add(1)
-        |> Queue.add([2, 3])
-
-      assert queue.items == [3, 2, 1]
-    end
   end
 end
