@@ -152,23 +152,20 @@ defmodule Mxpanel.Batcher do
   """
   @spec drain_buffers(name()) :: :ok
   def drain_buffers(batcher_name) do
-    batcher_name
-    |> Manager.buffers()
-    |> Enum.each(fn {pid, _} -> GenServer.call(pid, :drain) end)
+    Enum.each(@supported_endpoints, fn endpoint ->
+      batcher_name
+      |> Manager.buffers(endpoint)
+      |> Enum.each(fn pid -> GenServer.call(pid, :drain) end)
+    end)
   end
 
   @doc false
   def enqueue(batcher_name, operation_or_operations) do
-    grouped_buffers =
-      batcher_name
-      |> Manager.buffers()
-      |> Enum.group_by(fn {_pid, value} -> value end, fn {pid, _value} -> pid end)
-
     operation_or_operations
     |> List.wrap()
     |> Enum.each(fn operation ->
       batcher_name
-      |> Manager.checkout(grouped_buffers, operation)
+      |> Manager.checkout(operation)
       |> Buffer.enqueue(operation)
     end)
   end

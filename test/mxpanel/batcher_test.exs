@@ -4,13 +4,13 @@ defmodule Mxpanel.BatcherTest do
   import Mox
   import ExUnit.CaptureLog
   alias Mxpanel.Batcher
+  alias Mxpanel.Batcher.Manager
   alias Mxpanel.Operation
   alias Mxpanel.HTTPClientMock
 
   @one_year 86_400_000 * 365
 
   setup :verify_on_exit!
-  # TODO use bypass to run tests async?
   setup :set_mox_global
 
   describe "start_link/1" do
@@ -18,8 +18,13 @@ defmodule Mxpanel.BatcherTest do
       name = gen_name()
       assert {:ok, _pid} = Batcher.start_link(name: name, token: "token")
 
-      buffers = Registry.lookup(Module.concat(name, "Registry"), :buffers)
-      assert Enum.count(buffers) == System.schedulers_online() * 3
+      track_buffers = Registry.lookup(Module.concat(name, "Registry"), :track)
+      engage_buffers = Registry.lookup(Module.concat(name, "Registry"), :engage)
+      groups_buffers = Registry.lookup(Module.concat(name, "Registry"), :groups)
+
+      assert Enum.count(track_buffers) == System.schedulers_online()
+      assert Enum.count(engage_buffers) == System.schedulers_online()
+      assert Enum.count(groups_buffers) == System.schedulers_online()
     end
 
     test "required name" do
@@ -82,33 +87,24 @@ defmodule Mxpanel.BatcherTest do
         Batcher.enqueue(name, build_groups_operation("Company", "#{i}"))
       end
 
-      buffer_sizes =
+      track_sizes =
         name
-        |> Module.concat("Registry")
-        |> Registry.lookup(:buffers)
-        |> Enum.map(fn {pid, endpoint} ->
-          {endpoint, GenServer.call(pid, :get_buffer_size)}
-        end)
+        |> Manager.buffers(:track)
+        |> Enum.map(fn pid -> GenServer.call(pid, :get_buffer_size) end)
 
-      expected = [
-        {:track, 10},
-        {:track, 10},
-        {:track, 10},
-        {:track, 10},
-        {:track, 10},
-        {:engage, 8},
-        {:engage, 8},
-        {:engage, 8},
-        {:engage, 8},
-        {:engage, 8},
-        {:groups, 6},
-        {:groups, 6},
-        {:groups, 6},
-        {:groups, 6},
-        {:groups, 6}
-      ]
+      engage_sizes =
+        name
+        |> Manager.buffers(:engage)
+        |> Enum.map(fn pid -> GenServer.call(pid, :get_buffer_size) end)
 
-      assert buffer_sizes == expected
+      groups_sizes =
+        name
+        |> Manager.buffers(:groups)
+        |> Enum.map(fn pid -> GenServer.call(pid, :get_buffer_size) end)
+
+      assert track_sizes == [10, 10, 10, 10, 10]
+      assert engage_sizes == [8, 8, 8, 8, 8]
+      assert groups_sizes == [6, 6, 6, 6, 6]
     end
   end
 
@@ -148,38 +144,19 @@ defmodule Mxpanel.BatcherTest do
         Batcher.enqueue(name, build_track_operation("signup", "#{i}"))
       end
 
-      buffer_sizes = [
-        {:track, 20},
-        {:track, 20},
-        {:track, 20},
-        {:track, 20},
-        {:track, 20},
-        {:track, 20},
-        {:track, 20},
-        {:track, 20},
-        {:track, 20},
-        {:track, 20},
-        {:engage, 0},
-        {:engage, 0},
-        {:engage, 0},
-        {:engage, 0},
-        {:engage, 0},
-        {:engage, 0},
-        {:engage, 0},
-        {:engage, 0},
-        {:engage, 0},
-        {:engage, 0},
-        {:groups, 0},
-        {:groups, 0},
-        {:groups, 0},
-        {:groups, 0},
-        {:groups, 0},
-        {:groups, 0},
-        {:groups, 0},
-        {:groups, 0},
-        {:groups, 0},
-        {:groups, 0}
-      ]
+      for i <- 1..200 do
+        Batcher.enqueue(name, build_engage_operation("#{i}"))
+      end
+
+      for i <- 1..200 do
+        Batcher.enqueue(name, build_groups_operation("Company", "#{i}"))
+      end
+
+      buffer_sizes = %{
+        track: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20],
+        engage: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20],
+        groups: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
+      }
 
       assert_receive {:telemetry, [:mxpanel, :batcher, :buffers_info], %{},
                       %{
