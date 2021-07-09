@@ -64,7 +64,7 @@ defmodule MxpanelTest do
       %{bypass: bypass, batcher_name: batcher_name, token: token}
     end
 
-    test "deliver in background event", %{
+    test "track in background", %{
       bypass: bypass,
       batcher_name: batcher_name,
       token: token
@@ -113,6 +113,98 @@ defmodule MxpanelTest do
 
       assert Mxpanel.deliver_later(operation, batcher_name) == :ok
 
+      Batcher.drain_buffers(batcher_name)
+    end
+
+    test "engage in background", %{
+      bypass: bypass,
+      batcher_name: batcher_name,
+      token: token
+    } do
+      time = System.os_time(:second)
+
+      payload = %{
+        "$distinct_id" => "123",
+        "$set" => %{"Address" => "1313 Mockingbird Lane", "Birthday" => "1948-01-01"},
+        "$time" => time
+      }
+
+      operation = %Operation{endpoint: :engage, payload: payload}
+
+      Bypass.expect_once(bypass, "POST", "/engage", fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+        assert %{"data" => payload} = URI.decode_query(body)
+        decoded_payload = payload |> Base.decode64!() |> Jason.decode!()
+
+        assert decoded_payload == [
+                 %{
+                   "$distinct_id" => "123",
+                   "$set" => %{"Address" => "1313 Mockingbird Lane", "Birthday" => "1948-01-01"},
+                   "$time" => time,
+                   "$token" => token
+                 }
+               ]
+
+        assert Plug.Conn.get_req_header(conn, "content-type") == [
+                 "application/x-www-form-urlencoded"
+               ]
+
+        assert Plug.Conn.get_req_header(conn, "accept") == ["text/plain"]
+
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "text/plain")
+        |> Plug.Conn.resp(200, "1")
+      end)
+
+      assert Mxpanel.deliver_later(operation, batcher_name) == :ok
+      Batcher.drain_buffers(batcher_name)
+    end
+
+    test "groups in background", %{
+      bypass: bypass,
+      batcher_name: batcher_name,
+      token: token
+    } do
+      time = System.os_time(:second)
+
+      payload = %{
+        "$group_id" => "Mixpanel",
+        "$group_key" => "Company",
+        "$set" => %{"Address" => "1313 Mockingbird Lane", "Birthday" => "1948-01-01"},
+        "$time" => time
+      }
+
+      operation = %Operation{endpoint: :groups, payload: payload}
+
+      Bypass.expect_once(bypass, "POST", "/groups", fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+        assert %{"data" => payload} = URI.decode_query(body)
+        decoded_payload = payload |> Base.decode64!() |> Jason.decode!()
+
+        assert decoded_payload == [
+                 %{
+                   "$group_id" => "Mixpanel",
+                   "$group_key" => "Company",
+                   "$set" => %{"Address" => "1313 Mockingbird Lane", "Birthday" => "1948-01-01"},
+                   "$time" => time,
+                   "$token" => token
+                 }
+               ]
+
+        assert Plug.Conn.get_req_header(conn, "content-type") == [
+                 "application/x-www-form-urlencoded"
+               ]
+
+        assert Plug.Conn.get_req_header(conn, "accept") == ["text/plain"]
+
+        conn
+        |> Plug.Conn.put_resp_header("content-type", "text/plain")
+        |> Plug.Conn.resp(200, "1")
+      end)
+
+      assert Mxpanel.deliver_later(operation, batcher_name) == :ok
       Batcher.drain_buffers(batcher_name)
     end
 
@@ -181,8 +273,6 @@ defmodule MxpanelTest do
 
       Batcher.drain_buffers(batcher_name)
     end
-
-    # TODO deliver_later tests all operations
   end
 
   describe "deliver/2" do

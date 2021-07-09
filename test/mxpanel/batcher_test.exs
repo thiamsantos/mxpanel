@@ -5,8 +5,8 @@ defmodule Mxpanel.BatcherTest do
   import ExUnit.CaptureLog
   alias Mxpanel.Batcher
   alias Mxpanel.Batcher.Manager
-  alias Mxpanel.Operation
   alias Mxpanel.HTTPClientMock
+  alias Mxpanel.Operation
 
   @one_year 86_400_000 * 365
 
