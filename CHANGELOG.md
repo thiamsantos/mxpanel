@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2021-07-16
+
+### Changed
+
+- Fixed changelog headers
+
 ## [1.0.0] - 2021-07-09
 
 ### Added
@@ -87,7 +93,8 @@ in the `Mxpanel.track/4` function.
 - `Mxpanel.track_many/2`.
 - `Mxpanel.track_later/2`.
 
-[Unreleased]: https://github.com/thiamsantos/mxpanel/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/thiamsantos/mxpanel/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/thiamsantos/mxpanel/releases/tag/v1.0.1
 [1.0.0]: https://github.com/thiamsantos/mxpanel/releases/tag/v1.0.0
 [0.4.0]: https://github.com/thiamsantos/mxpanel/releases/tag/v0.4.0
 [0.3.0]: https://github.com/thiamsantos/mxpanel/releases/tag/v0.3.0

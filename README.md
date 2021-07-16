@@ -20,7 +20,7 @@ The package can be installed by adding `mxpanel` to your list of dependencies in
 ```elixir
 def deps do
   [
-    {:mxpanel, "~> 1.0.0"},
+    {:mxpanel, "~> 1.0.1"},
     {:jason, "~> 1.2"},
     {:hackney, "~> 1.17"}
   ]
