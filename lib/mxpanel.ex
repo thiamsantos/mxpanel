@@ -57,6 +57,52 @@ defmodule Mxpanel do
     %Operation{endpoint: :track, payload: payload}
   end
 
+  # TODO support strict=1
+  # TODO $insert_ids must be ≤ 36 bytes (characters)
+  # TODO When you see 429s, employ an exponential backoff with jitter strategy. We recommend starting with a backoff of 2s and doubling backoff until 60s, with 1-5s of jitter. See the example code below.
+  # TODO gzip compression if body greater than 2MB
+  # TODO Please do not retry validation errors (400 status code),
+  # https://github.com/keathley/finch/issues/130
+  # https://github.com/wojtekmach/req/blob/ce7113a52efd04012c6f9e8d0b8267439f5fd6b8/test/req_test.exs#L20
+  # https://bernheisel.com/blog/httpoison-and-decompression
+  # https://github.com/teamon/tesla/blob/2089534e88dad6d52a42793a21ff7b7a6e36ac78/lib/tesla/middleware/compression.ex
+
+  @doc """
+  Send events from your servers to Mixpanel.
+  This API helps plug Mixpanel into high-scale streaming or batch pipelines.
+
+  Import has several improvements over the legacy Track API:
+
+    - 2000 events per batch request
+    - Ingestion of events older than 5 days
+    - Service Account authentication
+    - GZIP compression
+    - Better validation to reject incorrectly instrumented events
+    - No longer requires token to be provided on every event
+
+  Checkout the [Mixpanel documentation for more information](https://developer.mixpanel.com/reference/events#import-events).
+
+      event_1 =
+        Mxpanel.import_event("old event", "billybob", %{"age" => 30},
+          time: DateTime.to_unix(~U[2015-01-13T13:00:07.123+00:00])
+        )
+
+      event_2 =
+        Mxpanel.import_event("another old event", "billybob", %{"color" => "red"},
+          time: DateTime.to_unix(~U[2015-01-14T13:00:07.123+00:00])
+        )
+
+      Mxpanel.deliver([event_1, event_2])
+
+  """
+  @spec import_event(String.t(), String.t(), map(), Keyword.t()) :: Operation.t()
+  def import_event(name, distinct_id, additional_properties \\ %{}, opts \\ [])
+      when is_binary(name) and is_binary(distinct_id) and is_map(additional_properties) do
+    payload = build_event(name, distinct_id, additional_properties, opts)
+
+    %Operation{endpoint: :import, payload: payload}
+  end
+
   defp build_event(name, distinct_id, additional_properties, opts) do
     opts = validate_options!(opts)
 
@@ -94,9 +140,9 @@ defmodule Mxpanel do
   end
 
   defp unique_insert_id do
-    32
+    27
     |> :crypto.strong_rand_bytes()
-    |> Base.encode64(padding: false)
+    |> Base.url_encode64(padding: false)
   end
 
   @doc """

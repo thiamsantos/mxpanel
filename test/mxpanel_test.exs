@@ -14,7 +14,7 @@ defmodule MxpanelTest do
       assert operation.payload["event"] == "signup"
       assert operation.payload["properties"]["distinct_id"] == "13793"
 
-      assert String.length(operation.payload["properties"]["$insert_id"]) == 43
+      assert String.length(operation.payload["properties"]["$insert_id"]) == 36
       assert is_integer(operation.payload["properties"]["time"])
       assert Map.has_key?(operation.payload["properties"], "ip") == false
     end
@@ -53,6 +53,58 @@ defmodule MxpanelTest do
 
       assert_raise ArgumentError, message, fn ->
         Mxpanel.track("signup", "13793", %{}, ip: :invalid)
+      end
+    end
+  end
+
+  describe "import_event/2" do
+    test "build operation" do
+      operation = Mxpanel.import_event("signup", "13793")
+
+      assert operation.endpoint == :import
+
+      assert operation.payload["event"] == "signup"
+      assert operation.payload["properties"]["distinct_id"] == "13793"
+
+      assert String.length(operation.payload["properties"]["$insert_id"]) == 36
+      assert is_integer(operation.payload["properties"]["time"])
+      assert Map.has_key?(operation.payload["properties"], "ip") == false
+    end
+
+    test "additional properties" do
+      operation = Mxpanel.import_event("signup", "13793", %{"Favourite Color" => "Red"})
+
+      assert operation.payload["event"] == "signup"
+      assert operation.payload["properties"]["distinct_id"] == "13793"
+      assert operation.payload["properties"]["Favourite Color"] == "Red"
+    end
+
+    test "custom time" do
+      time = 1234
+
+      operation = Mxpanel.import_event("signup", "13793", %{}, time: time)
+      assert operation.payload["properties"]["time"] == time
+    end
+
+    test "custom ip" do
+      operation = Mxpanel.import_event("signup", "13793", %{}, ip: "123.123.123.123")
+
+      assert operation.payload["properties"]["ip"] == "123.123.123.123"
+    end
+
+    test "invalid time" do
+      message = "expected :time to be a positive integer, got: :invalid"
+
+      assert_raise ArgumentError, message, fn ->
+        Mxpanel.import_event("signup", "13793", %{}, time: :invalid)
+      end
+    end
+
+    test "invalid ip" do
+      message = "expected :ip to be a string, got: :invalid"
+
+      assert_raise ArgumentError, message, fn ->
+        Mxpanel.import_event("signup", "13793", %{}, ip: :invalid)
       end
     end
   end
