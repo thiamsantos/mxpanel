@@ -5,7 +5,7 @@ defmodule Mxpanel.Operation do
   defstruct [:endpoint, :payload]
 
   @type t :: %__MODULE__{
-          endpoint: :track | :engage | :groups,
+          endpoint: :track | :engage | :groups | :import,
           payload: map()
         }
 end

@@ -103,7 +103,7 @@ defmodule Mxpanel do
     %Operation{endpoint: :import, payload: payload}
   end
 
-  defp build_event(name, distinct_id, additional_properties, opts) do
+  def build_event(name, distinct_id, additional_properties, opts) do
     opts = validate_options!(opts)
 
     properties = %{
@@ -179,44 +179,7 @@ defmodule Mxpanel do
   def deliver([], %Client{}), do: :ok
 
   def deliver(operation_or_operations, %Client{} = client) do
-    path = get_path(operation_or_operations)
-    data = build_data(operation_or_operations, client)
-
-    API.request(client, path, data)
-  end
-
-  defp get_path(operation_or_operations) do
-    endpoints =
-      operation_or_operations
-      |> List.wrap()
-      |> Enum.map(& &1.endpoint)
-      |> Enum.uniq()
-
-    first_endpoint = List.first(endpoints)
-
-    unless Enum.all?(endpoints, fn e -> e == first_endpoint end) do
-      raise ArgumentError,
-            "expected all endpoints to be equal, got different endpoints: #{inspect(endpoints)}"
-    end
-
-    case first_endpoint do
-      :track -> "/track"
-      :engage -> "/engage"
-      :groups -> "/groups"
-    end
-  end
-
-  defp build_data(operations, client) when is_list(operations) do
-    Enum.map(operations, &build_data(&1, client))
-  end
-
-  defp build_data(%Operation{endpoint: :track, payload: payload}, client) when is_map(payload) do
-    put_in(payload, ["properties", "token"], client.token)
-  end
-
-  defp build_data(%Operation{endpoint: endpoint, payload: payload}, client)
-       when endpoint in [:engage, :groups] and is_map(payload) do
-    Map.put(payload, "$token", client.token)
+    API.request(client, operation_or_operations)
   end
 
   @doc """
