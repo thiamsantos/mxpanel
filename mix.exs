@@ -32,7 +32,7 @@ defmodule Mxpanel.MixProject do
 
   defp deps do
     [
-      {:nimble_options, "~> 0.3.5"},
+      {:nimble_options, "~> 0.4.0"},
       {:telemetry, "~> 0.4.2"},
 
       # optional
