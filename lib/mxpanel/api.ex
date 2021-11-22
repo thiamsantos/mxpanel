@@ -13,7 +13,7 @@ defmodule Mxpanel.API do
     headers = [{"Accept", "text/plain"}, {"Content-Type", "application/x-www-form-urlencoded"}]
     encoded_body = URI.encode_query(%{data: encoded_data})
 
-    case apply(http_mod, :request, [:post, url, headers, encoded_body, http_opts]) do
+    case http_mod.request(:post, url, headers, encoded_body, http_opts) do
       {:ok, %{status: 200, body: "1"}} ->
         :ok
 
