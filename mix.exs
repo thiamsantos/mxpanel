@@ -41,7 +41,7 @@ defmodule Mxpanel.MixProject do
 
       # dev/test
       {:bypass, "~> 2.1", only: :test},
-      {:credo_naming, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:credo_naming, "~> 2.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false},
       {:excoveralls, "~> 0.14.0", only: :test},
