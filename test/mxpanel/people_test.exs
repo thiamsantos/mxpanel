@@ -34,7 +34,7 @@ defmodule Mxpanel.PeopleTest do
     end
 
     test "invalid time" do
-      message = "expected :time to be a positive integer, got: :invalid"
+      message = "invalid value for :time option: expected positive integer, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
         People.set("123", %{}, time: :invalid)
@@ -42,7 +42,7 @@ defmodule Mxpanel.PeopleTest do
     end
 
     test "invalid ip" do
-      message = "expected :ip to be a string, got: :invalid"
+      message = "invalid value for :ip option: expected string, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
         People.set("123", %{}, ip: :invalid)
@@ -50,7 +50,7 @@ defmodule Mxpanel.PeopleTest do
     end
 
     test "invalid ignore_time" do
-      message = "expected :ignore_time to be a boolean, got: :invalid"
+      message = "invalid value for :ignore_time option: expected boolean, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
         People.set("123", %{}, ignore_time: :invalid)
@@ -241,7 +241,7 @@ defmodule Mxpanel.PeopleTest do
     end
 
     test "invalid ignore_alias" do
-      message = "expected :ignore_alias to be a boolean, got: :invalid"
+      message = "invalid value for :ignore_alias option: expected boolean, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
         People.delete("123", ignore_alias: :invalid)

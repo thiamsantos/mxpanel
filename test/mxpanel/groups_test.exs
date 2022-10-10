@@ -26,7 +26,7 @@ defmodule Mxpanel.GroupsTest do
     end
 
     test "invalid time" do
-      message = "expected :time to be a positive integer, got: :invalid"
+      message = "invalid value for :time option: expected positive integer, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
         Groups.set("Company", "Mixpanel", %{}, time: :invalid)
