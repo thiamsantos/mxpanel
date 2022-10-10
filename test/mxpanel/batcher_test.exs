@@ -28,7 +28,7 @@ defmodule Mxpanel.BatcherTest do
     end
 
     test "required name" do
-      assert_raise ArgumentError, ~r/required option :name not found/, fn ->
+      assert_raise ArgumentError, ~r/required :name option not found/, fn ->
         Batcher.start_link(token: "token")
       end
     end

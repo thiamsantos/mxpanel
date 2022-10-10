@@ -41,7 +41,7 @@ defmodule MxpanelTest do
     end
 
     test "invalid time" do
-      message = "expected :time to be a positive integer, got: :invalid"
+      message = "invalid value for :time option: expected positive integer, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
         Mxpanel.track("signup", "13793", %{}, time: :invalid)
@@ -49,7 +49,7 @@ defmodule MxpanelTest do
     end
 
     test "invalid ip" do
-      message = "expected :ip to be a string, got: :invalid"
+      message = "invalid value for :ip option: expected string, got: :invalid"
 
       assert_raise ArgumentError, message, fn ->
         Mxpanel.track("signup", "13793", %{}, ip: :invalid)
