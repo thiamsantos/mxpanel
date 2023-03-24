@@ -60,6 +60,11 @@ defmodule Mxpanel.Batcher do
       type: :pos_integer,
       doc: "The size of the pool of event buffers. Defaults to `System.schedulers_online()`."
     ],
+    graceful_shutdown: [
+      type: :boolean,
+      doc: "Gracefully flush all in-flight messages before terminating.",
+      default: true
+    ],
     flush_interval: [
       type: :pos_integer,
       doc: "Interval in milliseconds which the event buffer are processed.",

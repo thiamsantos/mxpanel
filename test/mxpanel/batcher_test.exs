@@ -72,6 +72,7 @@ defmodule Mxpanel.BatcherTest do
          token: "token",
          pool_size: 5,
          flush_interval: @one_year,
+         graceful_shutdown: false,
          http_client: {HTTPClientMock, []}}
       )
 
@@ -136,6 +137,7 @@ defmodule Mxpanel.BatcherTest do
          token: "token",
          telemetry_buffers_info_interval: 1,
          flush_interval: @one_year,
+         graceful_shutdown: false,
          pool_size: 10,
          http_client: {HTTPClientMock, []}}
       )
@@ -383,6 +385,40 @@ defmodule Mxpanel.BatcherTest do
       end
 
       Batcher.drain_buffers(name)
+    end
+
+    test "flushes all queues on graceful shutdown" do
+      name = gen_name()
+
+      pid =
+        start_supervised!(
+          {Batcher,
+           name: name,
+           token: "token",
+           pool_size: 1,
+           telemetry_buffers_info_interval: 1,
+           http_client: {HTTPClientMock, []},
+           flush_interval: 100,
+           flush_jitter: 100}
+        )
+
+      expect(HTTPClientMock, :request, 3, fn :post, url, headers, body, opts ->
+        {:ok, %{body: "1", headers: [], status: 200}}
+      end)
+
+      for i <- 1..3 do
+        Batcher.enqueue(name, build_track_operation("signup", "#{i}"))
+      end
+
+      for i <- 1..3 do
+        Batcher.enqueue(name, build_engage_operation("#{i}"))
+      end
+
+      for i <- 1..3 do
+        Batcher.enqueue(name, build_groups_operation("Company", "#{i}"))
+      end
+
+      assert :ok = Supervisor.stop(pid)
     end
   end
 

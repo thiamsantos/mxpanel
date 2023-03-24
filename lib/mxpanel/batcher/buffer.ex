@@ -18,6 +18,7 @@ defmodule Mxpanel.Batcher.Buffer do
       :client,
       :flush_interval,
       :flush_jitter,
+      :graceful_shutdown,
       :retry_max_attempts,
       :retry_base_backoff,
       :import_timeout,
@@ -48,6 +49,7 @@ defmodule Mxpanel.Batcher.Buffer do
       client: client,
       flush_interval: opts[:flush_interval],
       flush_jitter: opts[:flush_jitter],
+      graceful_shutdown: opts[:graceful_shutdown],
       retry_max_attempts: opts[:retry_max_attempts],
       retry_base_backoff: opts[:retry_base_backoff],
       import_timeout: opts[:import_timeout],
@@ -55,6 +57,10 @@ defmodule Mxpanel.Batcher.Buffer do
       active: opts[:active],
       endpoint: opts[:endpoint]
     }
+
+    if state.graceful_shutdown do
+      Process.flag(:trap_exit, true)
+    end
 
     Manager.register(batcher_name, state.endpoint)
 
@@ -153,5 +159,17 @@ defmodule Mxpanel.Batcher.Buffer do
     jitter = :rand.uniform(flush_jitter)
 
     Process.send_after(self(), :flush, flush_interval + jitter)
+  end
+
+  @impl true
+  @doc "Flush all events before shutting down unless cleanup: false"
+  def terminate(_reason, %State{graceful_shutdown: false}) do
+    :ok
+  end
+
+  @impl true
+  def terminate(_reason, state) do
+    flush(state)
+    :ok
   end
 end
